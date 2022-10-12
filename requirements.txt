@@ -1,0 +1,11 @@
+# To run the code
+myst-nb
+myst-parser
+pydata-sphinx-theme
+openpyxl
+pandas
+altair
+
+# For developing
+itables
+jupyterlab
