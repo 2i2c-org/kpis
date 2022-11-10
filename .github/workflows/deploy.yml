@@ -50,3 +50,9 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v1
+
+      - name: Upload Logs and Build
+        uses: actions/upload-artifact@v3
+        with:
+          name: sphinx-logs
+          path: book/_build
