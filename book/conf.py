@@ -10,3 +10,5 @@ html_theme = "sphinx_2i2c_theme"
 html_theme_options = {
    "navbar_align": "left",
 }
+
+nb_execution_allow_errors = True
