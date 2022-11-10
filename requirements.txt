@@ -1,10 +1,11 @@
 # To run the code
-myst-nb
-myst-parser
-pydata-sphinx-theme
-openpyxl
-pandas
 altair
+myst-nb
+git+https://github.com/2i2c-org/sphinx-2i2c-theme
+pyairtable
+pandas
+sphinx-design
+sphinx-togglebutton
 
 # For developing
 itables

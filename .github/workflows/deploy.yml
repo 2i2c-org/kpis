@@ -20,6 +20,9 @@ concurrency:
   group: "pages"
   cancel-in-progress: true
 
+env:
+  AIRTABLE_API_KEY: ${{ secrets.GITHUB_API_KEY }}
+
 jobs:
   # Single deploy job since we're just deploying
   deploy:
