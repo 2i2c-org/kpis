@@ -20,9 +20,6 @@ concurrency:
   group: "pages"
   cancel-in-progress: true
 
-env:
-  AIRTABLE_API_KEY: ${{ secrets.GITHUB_API_KEY }}
-
 jobs:
   # Single deploy job since we're just deploying
   deploy:
@@ -38,8 +35,10 @@ jobs:
         uses: actions/configure-pages@v2
       
       # Install dependencies and build site
-      - run: pip install nox
-      - run: nox -s docs
+      - run: pip install -r requirements.txt
+      - run: sphinx-build book book/_build/html
+        env:
+          AIRTABLE_API_KEY: ${{ secrets.GITHUB_API_KEY }}
 
       # Upload to GH Pages
       - name: Upload artifact
