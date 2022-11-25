@@ -343,7 +343,7 @@ scatter = ch.mark_point(color="black").encode(
 bar + line + scatter
 ```
 
-Broken down by anonymized paying institution
+Broken down by anonymized paying community
 
 ```{code-cell} ipython3
 :tags: [remove-input, remove-stderr]
@@ -360,7 +360,7 @@ sorted_names = (
     .index.values
 )
 replacement_names = {
-    name: f"Institution {ii:2d}"
+    name: f"Community partner {ii:2d}"
     for name, ii in zip(sorted_names, range(1, len(sorted_names) + 1))
 }
 

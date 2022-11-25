@@ -26,6 +26,12 @@ Run this command:
 nox -s lab
 ```
 
+## Using Jupytext
+
+The Jupyter Notebooks in this repository are stored as **MyST Markdown notebooks**.
+This means they're text files instead of `.ipynb` files.
+See [the jupytext documentation for more details](https://jupytext.readthedocs.io/en/latest/paired-notebooks.html).
+
 ## If there is an error
 
 If there's an error in executing any of the cells above, you can browse the logs via the GitHub Action that is automatically run.
