@@ -10,3 +10,4 @@ sphinx-togglebutton
 # For developing
 itables
 jupyterlab
+jupytext

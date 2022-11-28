@@ -9,4 +9,6 @@ html_theme = "sphinx_2i2c_theme"
 
 html_theme_options = {
    "navbar_align": "left",
+   "repository_url": "https://github.com/2i2c-org/kpis",
+   "use_repository_button": True,
 }

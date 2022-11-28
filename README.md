@@ -7,10 +7,30 @@ A book to track our KPIs.
 Use the `nox` tool like so:
 
 ```
-nox -s build
+nox -s docs
 ```
 
 This will install the necessary requirements and build the book locally.
+
+To build the book with a live server to detect changes, run:
+
+```
+nox -s docs -- live
+```
+
+## To run a JupyterLab environment with packages installed
+
+Run this command:
+
+```
+nox -s lab
+```
+
+## Using Jupytext
+
+The Jupyter Notebooks in this repository are stored as **MyST Markdown notebooks**.
+This means they're text files instead of `.ipynb` files.
+See [the jupytext documentation for more details](https://jupytext.readthedocs.io/en/latest/paired-notebooks.html).
 
 ## If there is an error
 
