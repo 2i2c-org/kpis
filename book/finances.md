@@ -98,28 +98,25 @@ CHART_WIDTH = 700
 :tags: [remove-cell]
 
 # Summary of costs and revenue based on the books
-summary = accounts.copy()[["Date", "Cost", "Revenue"]]
+overall_summary = accounts.copy()[["Date", "Cost", "Revenue"]]
 
 # Calculate the monthly net and cumulative remaining over time
-summary = summary.resample("M", on="Date").agg("sum").reset_index()
-summary["Net"] = summary["Revenue"] - summary["Cost"]
-summary["Cumulative"] = summary["Net"].cumsum()
+overall_summary = overall_summary.resample("M", on="Date").agg("sum").reset_index()
+overall_summary["Net"] = overall_summary["Revenue"] - overall_summary["Cost"]
+overall_summary["Cumulative"] = overall_summary["Net"].cumsum()
 
 # Flip cost so that it plots upside down
-summary["Cost"] = -1 * summary["Cost"]
+overall_summary["Cost"] = -1 * overall_summary["Cost"]
 
 # Melt to long form for plotting
-summary = summary.melt(id_vars="Date", var_name="Category")
-
-# Save burn rate for future comparison
-burn_rate = summary.query("Category == 'Net'")
+overall_summary = overall_summary.melt(id_vars="Date", var_name="Category")
 ```
 
 ```{code-cell} ipython3
 :tags: [remove-input, remove-stderr, remove-stdout]
 
 # Plot net revenue, cumulative, and trend for next 6 months
-net = alt.Chart(summary.replace({"Cumulative": "Cash on Hand"}), title="Financial Summary", width=75)
+net = alt.Chart(overall_summary.replace({"Cumulative": "Cash on Hand"}), title="Financial Summary", width=75)
 yformat = alt.Axis(format="$,f")
 yscale = alt.Scale(domain=[-200000, 700000])
 net_br = net.mark_bar().encode(
@@ -144,10 +141,6 @@ net_br
 Monthly costs broken down by major category.
 
 Costs are generated from CS&S's monthly accounting data dumps (see above).
-
-```{code-cell} ipython3
-
-```
 
 ```{code-cell} ipython3
 :tags: [remove-cell]
@@ -399,10 +392,6 @@ Summary tables of revenue and cost by major category.
 Note that these are **reversed in time**.
 They begin with the latest updated month and end with our earliest month.
 
-+++
-
-### Cost
-
 ```{code-cell} ipython3
 :tags: [remove-cell]
 
@@ -415,21 +404,37 @@ def split_accounting_category(df):
         df.loc[ix, "Child"] = parts[1]
     return df
     
-def visualize_df_with_sum(df):
-    # Add summary statistics
-    df.loc["Sum", :] = df.sum(0).values
+def visualize_df_with_sum(df, summary=True):
+    if summary is True:
+        # Add summary statistics
+        df.loc["Sum", :] = df.sum(0).values
+        style = df.style
 
+        # Highlight our summary rows
+        def highlight_summaries(row):
+            total_style = pd.Series("font-weight: bold;", index=["Sum"])
+            return total_style
+        style = style.apply(highlight_summaries, axis=0)
+    else:
+        style = df.style
     # Dollar formatting
-    style = df.style.format("${:,.0f}", na_rep="$0")
+    style = style.format("${:,.0f}", na_rep="$0")
     style = style.format_index("{:%B, %Y}", axis=1)
 
-    # Highlight our summary rows
-    def highlight_summaries(row):
-        total_style = pd.Series("font-weight: bold;", index=["Sum"])
-        return total_style
-    style = style.apply(highlight_summaries, axis=0)
     return style
 ```
+
+### Overview
+
+```{code-cell} ipython3
+:tags: [remove-input]
+
+overall_summary_table = overall_summary.pivot(index="Category", values="value", columns="Date").sort_index(axis=1, ascending=False).loc[["Revenue", "Cost", "Net", "Cumulative"]]
+overall_summary_table = overall_summary_table.rename(index={"Cumulative": "Cash on Hand (end of month)"})
+visualize_df_with_sum(overall_summary_table, summary=False)
+```
+
+### Cost
 
 ```{code-cell} ipython3
 :tags: [remove-cell]
