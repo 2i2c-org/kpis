@@ -159,7 +159,9 @@ for ix, row in costs.iterrows():
         # For other expenses take the more specific category
         kind = row["Account"].split(":", 1)[-1]
     elif "professional fees" in row["Account"].lower():
-        kind = "Personnel Costs"
+        kind = "Personnel Costs (contractor)"
+    elif "Personnel Costs" in row["Account"]:
+        kind = "Personnel Costs (salaried)"
     else:
         # Otherwise just take the account section
         kind = row["Account"].split(":")[0].split(maxsplit=1)[-1]
@@ -435,18 +437,6 @@ visualize_df_with_sum(overall_summary_table, summary=False)
 ```
 
 ### Cost
-
-```{code-cell} ipython3
-:tags: [remove-cell]
-
-# Break up accounts into parent and child categories so it's easier to visualize
-costs = accounts.query("Cost > 0").drop(columns="Revenue")
-costs = split_accounting_category(costs)
-    
-# Group all personnel costs together since this is just salary + benefits
-# This will make them show up as a single line item
-costs.loc[costs.eval("Category == 'Personnel Costs'"), "Category"] = "Total"
-```
 
 ```{code-cell} ipython3
 :tags: [remove-input]
