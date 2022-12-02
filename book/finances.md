@@ -116,7 +116,7 @@ overall_summary = overall_summary.melt(id_vars="Date", var_name="Category")
 :tags: [remove-input, remove-stderr, remove-stdout]
 
 # Plot net revenue, cumulative, and trend for next 6 months
-net = alt.Chart(overall_summary.replace({"Cumulative": "Cash on Hand"}), title="Financial Summary", width=75)
+net = alt.Chart(overall_summary.replace({"Cumulative": "Cash on Hand"}), title="Financial Summary (reverse time)", width=75)
 yformat = alt.Axis(format="$,f")
 yscale = alt.Scale(domain=[-200000, 700000])
 net_br = net.mark_bar().encode(
@@ -158,10 +158,13 @@ for ix, row in costs.iterrows():
     if "other expenses" in row["Account"].lower():
         # For other expenses take the more specific category
         kind = row["Account"].split(":", 1)[-1]
+    # For now, we are lumping contractors and employees together
+    # This will make it harder for people to identify salary levels
+    # based just on this data.
     elif "professional fees" in row["Account"].lower():
-        kind = "Personnel Costs (contractor)"
+        kind = "Personnel Costs"
     elif "Personnel Costs" in row["Account"]:
-        kind = "Personnel Costs (salaried)"
+        kind = "Personnel Costs"
     else:
         # Otherwise just take the account section
         kind = row["Account"].split(":")[0].split(maxsplit=1)[-1]
@@ -198,7 +201,7 @@ cost_by_type.loc[:, "Sort"] = cost_by_type["Category"].map(
 ```{code-cell} ipython3
 :tags: [remove-input, remove-stderr]
 
-ch = alt.Chart(cost_by_type, width=CHART_WIDTH)
+ch = alt.Chart(cost_by_type, width=CHART_WIDTH, title="Monthly spending by category")
 ch.mark_bar().encode(
     x="yearmonth(Date):O",
     y=alt.Y(
@@ -209,6 +212,24 @@ ch.mark_bar().encode(
     ),
     color="Category",
     tooltip=["Category", "Cost"],
+).interactive()
+```
+
+```{code-cell} ipython3
+by_date = cost_by_type.set_index(["Date", "Category"])["Cost"].unstack("Category")
+by_date_percentage = by_date.apply(lambda a: a / a.sum(), axis=1)
+by_date_percentage = by_date_percentage.stack("Category").reset_index(name="Percent")
+
+ch = alt.Chart(by_date_percentage, width=CHART_WIDTH, title="Monthly spending by category")
+ch.mark_bar().encode(
+    x="yearmonth(Date):O",
+    y=alt.Y(
+        "Percent",
+        scale=alt.Scale(domain=[0, 1]),
+        axis=alt.Axis(format='%')
+    ),
+    color="Category",
+    tooltip=["Category", "Percent"],
 ).interactive()
 ```
 
@@ -277,7 +298,22 @@ revenue_monthly = (
 ```{code-cell} ipython3
 :tags: [remove-input, remove-stderr]
 
-ch = alt.Chart(revenue_monthly, width=CHART_WIDTH, title="Monthly revenue by category (with 3-month average)")
+ch = alt.Chart(revenue_monthly, width=CHART_WIDTH, title="Monthly revenue by category")
+bar = ch.mark_bar().encode(
+    x="yearmonth(Date):O",
+    y="Amount",
+    color="Category",
+    tooltip=["Category", "Amount"],
+).interactive()
+bar
+```
+
+Same plots but with `grants` removed because they are quite high.
+
+```{code-cell} ipython3
+:tags: [remove-input, remove-stderr]
+
+ch = alt.Chart(revenue_monthly.query("Category != 'Grant'"), width=CHART_WIDTH, title="Monthly revenue by category (no grants)")
 bar = ch.mark_bar().encode(
     x="yearmonth(Date):O",
     y="Amount",
@@ -338,10 +374,14 @@ scatter = ch.mark_point(color="black").encode(
 bar + line + scatter
 ```
 
++++ {"tags": ["remove-cell"]}
+
 Broken down by anonymized paying community
 
+> **Note** The below cell is removed to avoid concerns about anonymity. We should define a policy about how / when we make the identity of our partner communities public.
+
 ```{code-cell} ipython3
-:tags: [remove-input, remove-stderr]
+:tags: [remove-cell]
 
 # FLAGS
 ANONYMIZE_NAMES = True
