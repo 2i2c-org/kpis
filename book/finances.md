@@ -503,6 +503,8 @@ For months that do not have 12 previous months of historical data, we calculate 
 This might introduce some skew into our data for months with unusually high costs.
 
 ```{code-cell} ipython3
+:tags: [remove-input]
+
 def calculate_annual_average(series):
     n_entries = len(series)
     sum_total = series.sum()
