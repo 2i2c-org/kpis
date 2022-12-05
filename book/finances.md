@@ -509,7 +509,7 @@ def calculate_annual_average(series):
     n_extra = 12 - len(series)
     return sum_total + series.mean() * n_extra
 monthly_cost_total = costs_summary.loc["Sum"]
-monthly_cost_total = (monthly_cost_total.rolling(12, min_periods=1).apply(calculate_annual_average).to_frame("Expected Annual Total").T)
+monthly_cost_total = (monthly_cost_total.rolling(12, min_periods=1).apply(calculate_annual_average).to_frame("Expected Annual Costs").T)
 style = monthly_cost_total.style.format("${:,.0f}", na_rep="$0")
 style.format_index("{:%B, %Y}", axis=1)
 ```
