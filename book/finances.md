@@ -216,6 +216,8 @@ ch.mark_bar().encode(
 ```
 
 ```{code-cell} ipython3
+:tags: [remove-input, remove-stderr]
+
 by_date = cost_by_type.set_index(["Date", "Category"])["Cost"].unstack("Category")
 by_date_percentage = by_date.apply(lambda a: a / a.sum(), axis=1)
 by_date_percentage = by_date_percentage.stack("Category").reset_index(name="Percent")
@@ -326,7 +328,7 @@ bar
 **Hub Service revenue** with a monthly average
 
 ```{code-cell} ipython3
-:tags: [remove-cell]
+:tags: [remove-cell, remove-stderr]
 
 # Calculate a rolling mean each month
 monthly_service_revenue = revenue_monthly.query("Category == 'Hub Service'")
@@ -493,6 +495,23 @@ costs_summary = costs_summary.sort_index()
 costs_summary = costs_summary.sort_index(axis=1, ascending=False)
 
 visualize_df_with_sum(costs_summary)
+```
+
+An expected annual total, used to calculate our expected operating costs over a single year.
+Calculated by either summing across the last 12 months.
+For months that do not have 12 previous months of historical data, we calculate the sum of the available data, and then add `mean(available_data) * n_missing_months`.
+This might introduce some skew into our data for months with unusually high costs.
+
+```{code-cell} ipython3
+def calculate_annual_average(series):
+    n_entries = len(series)
+    sum_total = series.sum()
+    n_extra = 12 - len(series)
+    return sum_total + series.mean() * n_extra
+monthly_cost_total = costs_summary.loc["Sum"]
+monthly_cost_total = (monthly_cost_total.rolling(12, min_periods=1).apply(calculate_annual_average).to_frame("Expected Annual Costs").T)
+style = monthly_cost_total.style.format("${:,.0f}", na_rep="$0")
+style.format_index("{:%B, %Y}", axis=1)
 ```
 
 ### Revenue
