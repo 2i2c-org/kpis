@@ -352,7 +352,7 @@ Markdown(
 ```
 
 ```{code-cell} ipython3
-:tags: [remove-input]
+:tags: [remove-input, , remove-stderr, remove-stdout]
 
 ch = alt.Chart(monthly_service_revenue, width=CHART_WIDTH, title="Monthly Hub Service Revenue with 3 month average")
 bar = ch.mark_bar().encode(
