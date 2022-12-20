@@ -17,6 +17,8 @@ kernelspec:
 This analyses two data streams that represent 2i2c's financial activity.[^1]
 It is meant to be used for both financial analysis and projection, as well as defining a few KPIs for sustainability and efficiency.
 
+Last updated: **{sub-ref}`today`**
+
 [^1]: Inspired by [James' AirTable demo](https://github.com/2i2c-org/dashboard/blob/main/AirTableIntegration.ipynb).
 
 ```{admonition} Data source
@@ -350,7 +352,7 @@ Markdown(
 ```
 
 ```{code-cell} ipython3
-:tags: [remove-input]
+:tags: [remove-input, , remove-stderr, remove-stdout]
 
 ch = alt.Chart(monthly_service_revenue, width=CHART_WIDTH, title="Monthly Hub Service Revenue with 3 month average")
 bar = ch.mark_bar().encode(
@@ -428,6 +430,26 @@ bar = ch.mark_bar().encode(
     tooltip=["Contact", "Amount"]
 ).interactive()
 bar
+```
+
+Monthly contract revenue (total revenue minus grants) as a percentage of monthly costs.
+
+```{code-cell} ipython3
+:tags: [remove-input, remove-stderr, remove-stdout]
+
+cost_by_month = cost_by_type.groupby("Date").agg({"Cost": "sum"})
+contract_revenue_and_costs_monthly = cost_by_month.join(revenue_monthly_totals[["Amount"]], on="Date").rename(columns={"Amount": "Contract Revenue"})
+contract_revenue_and_costs_monthly["% Cost"] = contract_revenue_and_costs_monthly["Contract Revenue"] / contract_revenue_and_costs_monthly["Cost"]
+
+alt.Chart(contract_revenue_and_costs_monthly.reset_index(), width=CHART_WIDTH).mark_bar(strokeWidth=10).encode(
+    x="yearmonth(Date):O",
+    y=alt.Y(
+        "% Cost",
+        scale=alt.Scale(domain=[0, 1.2]),
+        axis=alt.Axis(format='%')
+    ),
+    tooltip=alt.Tooltip("% Cost", format="%")
+).interactive()
 ```
 
 ## Accounting tables
