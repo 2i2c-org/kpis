@@ -12,7 +12,7 @@ kernelspec:
   name: python3
 ---
 
-# Accounting Analysis
+# Accounting and finance
 
 This analyses two data streams that represent 2i2c's financial activity.[^1]
 It is meant to be used for both financial analysis and projection, as well as defining a few KPIs for sustainability and efficiency.
