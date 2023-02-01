@@ -130,3 +130,6 @@ dmypy.json
 
 # Sphinx
 */_build
+
+# Data files bundled with this tool that we don't want to check in
+book/data/github-activity.csv
