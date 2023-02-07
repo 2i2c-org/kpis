@@ -135,7 +135,7 @@ Active users broken down by each hub that we run.
 
 ```{code-cell} ipython3
 ---
-tags: [remove-input]
+tags: [remove-input, remove-stderr, remove-stdout]
 ---
 chs = []
 groups = df.query("cluster!='utoronto'").groupby("scale")
