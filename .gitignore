@@ -133,3 +133,4 @@ dmypy.json
 
 # Data files bundled with this tool that we don't want to check in
 book/data/github-activity.csv
+book/data/hub-activity.csv

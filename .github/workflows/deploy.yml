@@ -48,6 +48,9 @@ jobs:
         env:
           TOKEN_GITHUB_READONLY: ${{ secrets.TOKEN_GITHUB_API_READONLY }}
 
+      # Download the latest hub activity data
+      - run: python book/scripts/download_github_data.py
+
       # Build the site
       - run: sphinx-build book book/_build/html
         env:
