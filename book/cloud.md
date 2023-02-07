@@ -132,13 +132,24 @@ Markdown(grid % "\n".join(interior))
 ### Active users by hub
 
 Active users broken down by each hub that we run.
+We break our hubs into two groups as some hubs have orders of magnitude more users than others.
+
+```{code-cell} ipython3
+---
+tags: [remove-cell]
+---
+hubs_small = df.query("users < 150 and scale=='Weekly'")["hub"].values
+hubs_large = df.query("users >= 150 and scale=='Weekly'")["hub"].values
+```
+
+First for all hubs below 150 weekly users.
 
 ```{code-cell} ipython3
 ---
 tags: [remove-input, remove-stderr, remove-stdout]
 ---
 chs = []
-groups = df.query("cluster!='utoronto'").groupby("scale")
+groups = df.query("hub in @hubs_small").groupby("scale")
 for scale in scale_ordering:
     idata = groups.get_group(scale)
     ch = alt.Chart(idata, title=f"{scale} users").mark_bar().encode(
@@ -151,16 +162,23 @@ for scale in scale_ordering:
 alt.hconcat(*chs)
 ```
 
-### Outlier hubs
+Now for all hubs above 150 weekly users.
 
-Table statistics for a few hand-picked outliers so they don't skew the data above.
 
 ```{code-cell} ipython3
 ---
-tags: [remove-input]
+tags: [remove-input, remove-stderr, remove-stdout]
 ---
-dftable = df.query("cluster=='utoronto'")[["hub", "scale", "users"]].sort_values("scale", key=lambda col: col.map(lambda a: scale_ordering.index(a)))
-dftable = dftable.set_index(["hub", "scale"]).unstack("scale")["users"][scale_ordering]
-dftable.columns.name = None
-dftable.style.set_caption("Usage data for outlier hub")
+chs = []
+groups = df.query("hub in @hubs_large").groupby("scale")
+for scale in scale_ordering:
+    idata = groups.get_group(scale)
+    ch = alt.Chart(idata, title=f"{scale} users").mark_bar().encode(
+        alt.X("users:Q", bin=True),
+        y='count()',
+        color="scale",
+        tooltip=["users", "hub"],
+    ).interactive()
+    chs.append(ch)
+alt.hconcat(*chs)
 ```
