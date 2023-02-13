@@ -14,6 +14,6 @@ def docs(session):
     
     if "live" in session.posargs:
       session.install("sphinx-autobuild")
-      session.run(*split("sphinx-autobuild book book/_build/html"))
+      session.run(*split("sphinx-autobuild book book/_build/html --port 0"))
     else:
       session.run(*split("sphinx-build book book/_build/html"))

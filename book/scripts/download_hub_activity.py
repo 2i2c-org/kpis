@@ -61,6 +61,7 @@ with Progress() as progress:
             progress.update(p_hubs, description=f"Processing hub {hub_name}...")
             resp = urlopen(f'https://{hub["domain"]}/metrics').read()
             metrics = resp.decode().split("\n")
+
             # Search for jupyterhub_active_users lines and grab their values
             for iline in metrics:
                 if "jupyterhub_active_users" not in iline:
@@ -74,7 +75,8 @@ with Progress() as progress:
                             "cluster": cluster.split("/")[-1],
                             "hub": hub["domain"],
                             "scale": name,
-                            "users": users
+                            "users": users,
+                            "chart": hub["helm_chart"]
                         })
             progress.update(p_hubs, advance=1)
         progress.update(p_clusters, advance=1)
@@ -83,3 +85,4 @@ with Progress() as progress:
 df = pd.DataFrame(df)
 path_out = Path(__file__).parent / ".." / "data" / "hub-activity.csv"
 df.to_csv(path_out)
+print(f"Finished downloading hub activity data to {path_out}.")

@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.1
+    jupytext_version: 1.14.4
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -21,10 +21,19 @@ Last updated: **{sub-ref}`today`**
 
 [^1]: Inspired by [James' AirTable demo](https://github.com/2i2c-org/dashboard/blob/main/AirTableIntegration.ipynb).
 
-```{admonition} Data source
-[Accounting base in AirTable](https://airtable.com/appbjBTRIbgRiElkr) that contains data that we use in these analyses.
-It is accessed programmatically via an API key.
-See [these instructions to create an API key for yourself](https://support.airtable.com/docs/creating-a-read-only-api-key).
+
+```{admonition} Data sources
+:class: dropdown
+
+There are two data sources on this page, both of which are described in more detail [on our Accounting sources page](https://compass.2i2c.org/en/latest/finance/accounting.html).
+
+1. **CS&S's monthly accounting data dumps**.
+   These contain every transaction that 2i2c has ever recorded with CS&S.
+   See [our Team Compass Accounting page](https://compass.2i2c.org/en/latest/finance/accounting.html#raw-accounting-statements) for more information.
+2. **Revenue data in the `Invoices` AirTable**.
+   It is synced from the CS&S AirTable that contains _all invoices for 2i2c_.
+   Includes all **invoices** but does not contain some revenue and costs. Excludes payments to employees as well as grant-based payments.
+   See [our Team Compass Accounting page](https://compass.2i2c.org/en/latest/finance/accounting.html#airtable-data) for more information.
 ```
 
 +++ {"tags": ["remove-cell"]}
@@ -60,24 +69,9 @@ import pandas as pd
 from IPython.display import Markdown
 ```
 
-## Financial summary
+## Overview of monthly cost and revenue
 
 Provides an overview of our costs, revenue, and burn rate.
-
-Our financial summary is generated from CS&S's monthly accounting data dumps. It is less user-friendly than the AirTable data used to define revenue, but has complete cost information, and so we use it to define our own costs and the **Source of Truth** for our financial situation.
-
-**What's in this data**. These contain every transaction that 2i2c has ever recorded with CS&S.
-
-```{admonition} To update this Table with the latest data
-:class: dropdown
-
-- Go to the [2i2c Financial Statements folder with CS&S](https://drive.google.com/drive/folders/1vM_QX1J8GW5z8W5WemxhhVjcCS2kEovN?usp=share_link) (only accessible to CS&S and 2i2c admins)
-- Open the latest financial statement (new ones are loaded each month)
-- In the first tab (`Account Transactions`), copy **all of the records** (excluding header names and footer content). This usually starts on **Row 9**.
-- Go to [the Accounting Transactions Table](https://airtable.com/appbjBTRIbgRiElkr/tblDKGQFU0iEIa5Qb)
-- Select **all cells on the table** (`ctrl/cmd + A` as a shortcut)
-- Paste all of the copied records into this table. From the top, it should look like nothing has changed, but there should now be new records at the bottom.
-```
 
 ```{code-cell} ipython3
 :tags: [remove-cell]
@@ -88,6 +82,19 @@ records = accounts.all()
 accounts = pd.DataFrame([r["fields"] for r in records])
 accounts = accounts.rename(columns={"Debit": "Cost", "Credit": "Revenue"})
 accounts["Date"] = pd.to_datetime(accounts["Date"])
+```
+
+```{code-cell} ipython3
+:tags: [remove-cell]
+
+# Re-categorize our old AWS and Google Cloud entries that were created before the "rebillable to customers" category existed
+cloud_charge_keywords = ["google cloud", "google*cloud", "cloud infrastructure", "aws", "amazong web services", "azure"]
+old_category = "5531 Professional Fees/Outside Svcs.:Information Technology Services"
+for kw in cloud_charge_keywords:
+    cloud_matches = accounts["Description"].str.lower().str.contains(kw.lower())
+    incorrectly_categorized = accounts["Account"].str.contains(old_category)
+    matches = (cloud_matches + incorrectly_categorized) > 0
+    accounts.loc[matches, "Account"] = "7101 Costs Rebillable to Customers"
 ```
 
 ```{code-cell} ipython3
@@ -118,13 +125,14 @@ overall_summary = overall_summary.melt(id_vars="Date", var_name="Category")
 :tags: [remove-input, remove-stderr, remove-stdout]
 
 # Plot net revenue, cumulative, and trend for next 6 months
-net = alt.Chart(overall_summary.replace({"Cumulative": "Cash on Hand"}), title="Financial Summary (reverse time)", width=75)
+net = alt.Chart(overall_summary.replace({"Cumulative": "Cash on Hand"}), title="Financial Summary (present <--> past)", width=75)
 yformat = alt.Axis(format="$,f")
-yscale = alt.Scale(domain=[-200000, 700000])
+y_domain = [overall_summary["value"].min() - 10000, overall_summary["value"].max() + 10000]
+yscale = alt.Scale(domain=y_domain)
 net_br = net.mark_bar().encode(
     y=alt.Y("value", scale=yscale, axis=yformat),
     x=alt.X("Category", sort=alt.Sort(["Revenue", "Cost", "Net", "Cash on Hand"])),
-    column=alt.Column("yearmonth(Date):O", spacing=5),
+    column=alt.Column("yearmonth(Date):O", spacing=5, sort="descending"),
     tooltip=["Category", "value"],
     color=alt.Color(
         "Category",
@@ -238,19 +246,6 @@ ch.mark_bar().encode(
 ```
 
 ## Revenue
-
-Our revenue data is defined in [the `Invoices` AirTable](https://airtable.com/appbjBTRIbgRiElkr/tblPn2utQBDEQomeq).
-It is synced from the CS&S AirTable that contains _all invoices for 2i2c_.
-
-**What's in this data**. Includes all **invoices** but does not contain some revenue and costs. Excludes payments to employees as well as grant-based payments.
-
-```{admonition} To sync this Table with the latest data
-:class: dropdown
-
-- Click on the [`Invoices` table](https://airtable.com/appbjBTRIbgRiElkr/tblPn2utQBDEQomeq)
-- Click on the downward caret (`v`)
-- Click on `⚡Sync Now`
-```
 
 +++ {"tags": ["remove-cell"]}
 
@@ -432,7 +427,8 @@ bar = ch.mark_bar().encode(
 bar
 ```
 
-Monthly contract revenue (total revenue minus grants) as a percentage of monthly costs.
+**Contract revenue as a percentage of monthly costs.**
+100% means that we have fully recovered our costs that month.
 
 ```{code-cell} ipython3
 :tags: [remove-input, remove-stderr, remove-stdout]
@@ -441,14 +437,60 @@ cost_by_month = cost_by_type.groupby("Date").agg({"Cost": "sum"})
 contract_revenue_and_costs_monthly = cost_by_month.join(revenue_monthly_totals[["Amount"]], on="Date").rename(columns={"Amount": "Contract Revenue"})
 contract_revenue_and_costs_monthly["% Cost"] = contract_revenue_and_costs_monthly["Contract Revenue"] / contract_revenue_and_costs_monthly["Cost"]
 
-alt.Chart(contract_revenue_and_costs_monthly.reset_index(), width=CHART_WIDTH).mark_bar(strokeWidth=10).encode(
+ch = alt.Chart(contract_revenue_and_costs_monthly.reset_index(), width=CHART_WIDTH).mark_bar(strokeWidth=10).encode(
     x="yearmonth(Date):O",
     y=alt.Y(
         "% Cost",
         scale=alt.Scale(domain=[0, 1.2]),
         axis=alt.Axis(format='%')
     ),
-    tooltip=alt.Tooltip("% Cost", format="%")
+    tooltip=alt.Tooltip("% Cost", format=".0%")
+).interactive()
+
+ln = alt.Chart(pd.DataFrame({'y': [1]})).mark_rule(strokeDash=[10, 10]).encode(y='y')
+ch + ln
+```
+
+## Cloud costs recovery
+
+Below are our monthly cloud costs across all providers for our communities.
+We pass-through cloud costs directly to communities in invoices, so we also track the revenue we've generated to make up for these costs.
+
+```{warning} These might not be correct
+It's possible that these numbers are not correct because we have not yet set up the right billing categories.
+In particular, some of our cloud cost recovery is merged with our fees in a single monthly invoice.
+
+See https://github.com/2i2c-org/team-compass/issues/663 for an issue tracking this.
+```
+
+```{code-cell} ipython3
+:tags: [remove-cell]
+
+# Group by month and separate out costs vs. revenues
+rebillable_category = "7101 Costs Rebillable to Customers"
+cloud_costs = accounts.query("Account == @rebillable_category").copy()
+cloud_costs = pd.melt(cloud_costs[["Date", "Cost", "Revenue"]], id_vars="Date", var_name="Kind").query("value > 0")
+cloud_costs = cloud_costs.groupby(["Kind"]).resample("M", on="Date").sum(numeric_only=True).reset_index()
+
+# Pivot so that we can compare revenue to cost per month
+cloud_costs = pd.pivot(cloud_costs, index="Date", columns="Kind", values="value")
+cloud_costs["Net"] = cloud_costs["Revenue"] - cloud_costs["Cost"]
+
+# Now move back to long-form so we can plot
+cloud_costs = cloud_costs.stack()
+cloud_costs.name = "value"
+cloud_costs = cloud_costs.reset_index()
+```
+
+```{code-cell} ipython3
+:tags: [remove-input, remove-stderr, remove-stdout]
+
+alt.Chart(cloud_costs, title="Cloud costs and recovery (present <--> past)").mark_bar().encode(
+    column=alt.Column("Date", sort="descending"),
+    x=alt.X("Kind", scale=alt.Scale(domain=["Cost", "Revenue", "Net"])),
+    y="value",
+    tooltip=["Kind", alt.Tooltip("value", format="$,.2f")],
+    color=alt.Color("Kind", scale=alt.Scale(domain=["Cost", "Revenue", "Net"], range=["red", "green", "grey"])),
 ).interactive()
 ```
 
@@ -518,6 +560,8 @@ costs_summary = costs_summary.sort_index(axis=1, ascending=False)
 
 visualize_df_with_sum(costs_summary)
 ```
+
+#### Anticipated annual total costs
 
 An expected annual total, used to calculate our expected operating costs over a single year.
 Calculated by either summing across the last 12 months.

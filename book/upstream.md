@@ -19,6 +19,8 @@ mystnb:
 
 This is a short visualization of the 2i2c team's activity in upstream repositories. Its goal is to give a high level indication of where we're spending our time in key upstream communities.
 
+Last updated: **{sub-ref}`today`**
+
 ```{admonition} Work in progress!
 This is a work in progress, so some of the GitHub search queries might be slightly off.
 Use this to get a high-level view, but don't read too much into the details.

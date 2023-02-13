@@ -19,7 +19,7 @@ Our currently running infrastructure and active users over time.
 
 Our financial activity, including our costs and revenue broken down by category.
 ```
-```{grid-item-card} Upstream contributions 💗
+```{grid-item-card} Upstream support 💗
 :link: upstream
 :link-type: doc
 

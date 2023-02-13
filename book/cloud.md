@@ -36,37 +36,37 @@ This data is pulled from these two sources:
 ```
 
 ```{code-cell} ipython3
----
-tags: [remove-cell]
----
+:tags: [remove-cell]
 
 import pandas as pd
 from pathlib import Path
 import altair as alt
 from textwrap import dedent
-from IPython.display import Markdown
+from IPython.display import Markdown, display
 ```
 
 ## Load and munge data
 
 ```{code-cell} ipython3
----
-tags: [remove-cell]
----
+:tags: [remove-cell]
+
 # Load the data
 df = pd.read_csv("data/hub-activity.csv", index_col=0)
 
 # Remove the staging hubs since they are generally redundant
 df = df.loc[df["hub"].map(lambda a: "staging" not in a)]
+
+# Categorize hub type
+df = df.replace({"basehub": "Basic", "daskhub": "Dask Gateway"})
 ```
 
 ## Number of hubs
 
 `````{code-cell} ipython3
 ---
-tags: [remove-input]
 mystnb:
   markdown_format: myst
+tags: [remove-input]
 ---
 # Basic stats about our number of hubs and clusters
 n_clusters = df["cluster"].nunique()
@@ -91,12 +91,22 @@ Markdown(f"""
 _excluding staging hubs_
 
 ```{code-cell} ipython3
----
-tags: [remove-input]
----
+:tags: [remove-input]
+
 table_nhubs = df.groupby("cluster").agg({"hub": "nunique"}).sort_values("hub", ascending=False)
 table_nhubs.columns = ["Number of hubs"]
 table_nhubs.T
+```
+
+### Types of hubs
+
+```{code-cell} ipython3
+:tags: [remove-input]
+
+hub_types = df.query("scale == 'Weekly'").groupby("chart").agg({"hub": "count", "users": "sum"})
+hub_types = hub_types.rename(columns={"hub": "Number of hubs", "users": "Weekly users"})
+hub_types.index.name = "Chart type"
+hub_types
 ```
 
 ## Active users
@@ -107,9 +117,9 @@ Total active users across all of our hubs and communities.
 
 `````{code-cell} ipython3
 ---
-tags: [remove-input]
 mystnb:
   markdown_format: myst
+tags: [remove-input]
 ---
 grid = """
 ````{grid}
@@ -135,50 +145,22 @@ Active users broken down by each hub that we run.
 We break our hubs into two groups as some hubs have orders of magnitude more users than others.
 
 ```{code-cell} ipython3
----
-tags: [remove-cell]
----
-hubs_small = df.query("users < 150 and scale=='Weekly'")["hub"].values
-hubs_large = df.query("users >= 150 and scale=='Weekly'")["hub"].values
-```
+:tags: [remove-input, remove-stderr, remove-stdout]
 
-First for all hubs below 150 weekly users.
-
-```{code-cell} ipython3
----
-tags: [remove-input, remove-stderr, remove-stdout]
----
-chs = []
-groups = df.query("hub in @hubs_small").groupby("scale")
-for scale in scale_ordering:
-    idata = groups.get_group(scale)
-    ch = alt.Chart(idata, title=f"{scale} users").mark_bar().encode(
-        alt.X("users:Q", bin=True),
-        y='count()',
-        color="scale",
-        tooltip=["users", "hub"],
-    ).interactive()
-    chs.append(ch)
-alt.hconcat(*chs)
-```
-
-Now for all hubs above 150 weekly users.
-
-
-```{code-cell} ipython3
----
-tags: [remove-input, remove-stderr, remove-stdout]
----
-chs = []
-groups = df.query("hub in @hubs_large").groupby("scale")
-for scale in scale_ordering:
-    idata = groups.get_group(scale)
-    ch = alt.Chart(idata, title=f"{scale} users").mark_bar().encode(
-        alt.X("users:Q", bin=True),
-        y='count()',
-        color="scale",
-        tooltip=["users", "hub"],
-    ).interactive()
-    chs.append(ch)
-alt.hconcat(*chs)
+queries = ["< 150", ">= 150"]
+for qu in queries:
+    hubs_small = df.query(f"users {qu} and scale=='Weekly'")["hub"].values
+    chs = []
+    groups = df.query("hub in @hubs_small").groupby("scale")
+    for scale in scale_ordering:
+        idata = groups.get_group(scale)
+        ch = alt.Chart(idata, title=f"{scale} users").mark_bar().encode(
+            alt.X("users:Q", bin=True),
+            y='count()',
+            color="scale",
+            tooltip=["users", "hub"],
+        ).interactive()
+        chs.append(ch)
+    display(Markdown(f"**For hubs {qu} weekly users.**"))
+    display(alt.hconcat(*chs))
 ```
