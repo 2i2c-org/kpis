@@ -7,13 +7,19 @@ Its goal is to quickly let us look at the most important numbers to gauge the he
 These are tools from the [ExecutableBooks project](https://executablebooks.org), one of 2i2c's key upstream communities.
 
 ````{grid}
+```{grid-item-card} Cloud and hub usage ☁️
+:link: cloud
+:link-type: doc
+
+Our currently running infrastructure and active users over time.
+```
 ```{grid-item-card} Accounting analysis 📈
 :link: finances
 :link-type: doc
 
 Our financial activity, including our costs and revenue broken down by category.
 ```
-```{grid-item-card} Upstream contributions 💗
+```{grid-item-card} Upstream support 💗
 :link: upstream
 :link-type: doc
 
@@ -26,6 +32,7 @@ Below is a breakdown of the categories above with more information about their s
 ```{toctree}
 :maxdepth: 2
 
-finances
+cloud
 upstream
+finances
 ```
