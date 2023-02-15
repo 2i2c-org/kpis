@@ -53,7 +53,7 @@ jobs:
 
 
       # Build the site
-      - run: sphinx-build book book/_build/dirhtml
+      - run: sphinx-build -b dirhtml book book/_build/dirhtml
         env:
           AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
 
