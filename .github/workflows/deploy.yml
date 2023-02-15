@@ -43,13 +43,14 @@ jobs:
       # Install dependencies
       - run: pip install -r requirements.txt
 
+      # Download the latest hub activity data
+      - run: python book/scripts/download_hub_activity.py
+
       # Download the latest GitHub data
       - run: python book/scripts/download_github_data.py
         env:
           TOKEN_GITHUB_READONLY: ${{ secrets.TOKEN_GITHUB_API_READONLY }}
 
-      # Download the latest hub activity data
-      - run: python book/scripts/download_github_data.py
 
       # Build the site
       - run: sphinx-build book book/_build/html
