@@ -42,4 +42,4 @@ To do so:
 - Click on the `Summary` tab, and then at the bottom download the `.zip`
 - Scroll down to `Artifacts`
 - Click the `zip` file for `sphinx-logs`
-- The results of computation are in `sphinx-logs.zip\html\reports`
+- The results of computation are in `sphinx-logs.zip\dirhtml\reports`
