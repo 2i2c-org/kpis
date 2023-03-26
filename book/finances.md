@@ -5,12 +5,14 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.4
+    jupytext_version: 1.14.5
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
 ---
+
++++ {"user_expressions": []}
 
 # Accounting and finance
 
@@ -21,8 +23,8 @@ Last updated: **{sub-ref}`today`**
 
 [^1]: Inspired by [James' AirTable demo](https://github.com/2i2c-org/dashboard/blob/main/AirTableIntegration.ipynb).
 
-
-```{admonition} Data sources
+(data-sources)=
+```{note} Data sources
 :class: dropdown
 
 There are two data sources on this page, both of which are described in more detail [on our Accounting sources page](https://compass.2i2c.org/en/latest/finance/accounting.html).
@@ -36,7 +38,7 @@ There are two data sources on this page, both of which are described in more det
    See [our Team Compass Accounting page](https://compass.2i2c.org/en/latest/finance/accounting.html#airtable-data) for more information.
 ```
 
-+++ {"tags": ["remove-cell"]}
++++ {"tags": ["remove-cell"], "user_expressions": []}
 
 ## Connect with our base
 
@@ -69,9 +71,24 @@ import pandas as pd
 from IPython.display import Markdown
 ```
 
++++ {"user_expressions": []}
+
 ## Overview of monthly cost and revenue
 
 Provides an overview of our costs, revenue, and burn rate.
+
+```{code-cell} ipython3
+:tags: [remove-cell]
+
+# Start date for the records we'll display
+from datetime import datetime, timedelta
+
+# Using 8 months because we display N-1 months in the viz, and the latest month tends to be not up to date
+# So this gives us N=6 months + 1 for the latest month.
+n_months = 8
+start_date = datetime.today() - timedelta(days=30*n_months)
+start_date = datetime(year=start_date.year, month=start_date.month, day=1)
+```
 
 ```{code-cell} ipython3
 :tags: [remove-cell]
@@ -82,25 +99,33 @@ records = accounts.all()
 accounts = pd.DataFrame([r["fields"] for r in records])
 accounts = accounts.rename(columns={"Debit": "Cost", "Credit": "Revenue"})
 accounts["Date"] = pd.to_datetime(accounts["Date"])
-```
 
-```{code-cell} ipython3
-:tags: [remove-cell]
+# Only keep data within the last N months
+accounts = accounts.query("Date > @start_date")
+
+# Rename `Net` so that we can add a proper Net later
+accounts = accounts.rename(columns={"Net": "Amount"})
 
 # Re-categorize our old AWS and Google Cloud entries that were created before the "rebillable to customers" category existed
 cloud_charge_keywords = ["google cloud", "google*cloud", "cloud infrastructure", "aws", "amazong web services", "azure"]
-old_category = "5531 Professional Fees/Outside Svcs.:Information Technology Services"
+old_category = "Professional Fees/Outside Svcs.:Information Technology Services"
 for kw in cloud_charge_keywords:
     cloud_matches = accounts["Description"].str.lower().str.contains(kw.lower())
-    incorrectly_categorized = accounts["Account"].str.contains(old_category)
+    incorrectly_categorized = accounts["Category"].str.contains(old_category)
     matches = (cloud_matches + incorrectly_categorized) > 0
-    accounts.loc[matches, "Account"] = "7101 Costs Rebillable to Customers"
+    accounts.loc[matches, "Category"] = "Costs Rebillable to Customers"
+    
+
+# Split out cloud costs because we treat these costs differently from other costs
+# This is because we recover them through invoices, and the total should be zero
+rebillable = accounts.query("Category == 'Costs Rebillable to Customers'").copy()
+accounts = accounts.query("Category != 'Costs Rebillable to Customers'").copy()
 ```
 
 ```{code-cell} ipython3
 :tags: [remove-cell]
 
-CHART_WIDTH = 700
+CHART_WIDTH = 575
 ```
 
 ```{code-cell} ipython3
@@ -132,7 +157,7 @@ yscale = alt.Scale(domain=y_domain)
 net_br = net.mark_bar().encode(
     y=alt.Y("value", scale=yscale, axis=yformat),
     x=alt.X("Category", sort=alt.Sort(["Revenue", "Cost", "Net", "Cash on Hand"])),
-    column=alt.Column("yearmonth(Date):O", spacing=5, sort="descending"),
+    column=alt.Column("yearmonth(Date):O", spacing=5),
     tooltip=["Category", "value"],
     color=alt.Color(
         "Category",
@@ -146,11 +171,13 @@ net_br = net.mark_bar().encode(
 net_br
 ```
 
++++ {"user_expressions": []}
+
 ## Costs
 
 Monthly costs broken down by major category.
 
-Costs are generated from CS&S's monthly accounting data dumps (see above).
+Costs are generated from CS&S's monthly accounting data dumps (see [data sources](#data-sources)).
 
 ```{code-cell} ipython3
 :tags: [remove-cell]
@@ -165,19 +192,21 @@ costs["Date"] = pd.to_datetime(costs["Date"])
 
 # Categories our costs for a rough idea
 for ix, row in costs.iterrows():
-    if "other expenses" in row["Account"].lower():
+    if "other expenses" in row["Category"].lower():
         # For other expenses take the more specific category
-        kind = row["Account"].split(":", 1)[-1]
+        kind = row["Category"].split(":", 1)[-1]
     # For now, we are lumping contractors and employees together
     # This will make it harder for people to identify salary levels
     # based just on this data.
-    elif "professional fees" in row["Account"].lower():
+    elif "professional fees" in row["Category"].lower():
         kind = "Personnel Costs"
-    elif "Personnel Costs" in row["Account"]:
+    elif "Personnel Costs" in row["Category"]:
         kind = "Personnel Costs"
+    elif "Program Expenses" in row["Category"]:
+        kind = "Grants to Other Organizations"
     else:
         # Otherwise just take the account section
-        kind = row["Account"].split(":")[0].split(maxsplit=1)[-1]
+        kind = row["Category"].split(":")[0]
     costs.loc[ix, "Category"] = kind
 
 # Only keep the columns we want
@@ -193,7 +222,7 @@ costs["Kind"] = "cost"
 # Group by month and aggregate by type
 cost_by_type = (
     costs.groupby([pd.Grouper(key="Date", freq="1M"), "Category"])
-    .sum()
+    .sum(numeric_only=True)
     .reset_index()
     .query("Cost > 0")
     .sort_values("Cost")
@@ -201,11 +230,26 @@ cost_by_type = (
 
 # Add sorting values to categories
 sorted_categories = (
-    cost_by_type.groupby("Category").sum().sort_values("Cost").index.values
+    cost_by_type.groupby("Category").sum(numeric_only=True).sort_values("Cost").index.values
 )
 cost_by_type.loc[:, "Sort"] = cost_by_type["Category"].map(
     lambda a: sorted_categories.tolist().index(a)
 )
+```
+
+```{code-cell} ipython3
+:tags: [remove-cell]
+
+# Exclude a few categories that aren't representative of our spending
+# These do incur a real cost, but aren't helpful in knowing where our money goes
+# However we should make sure this doesn't skew our perception of our *income*
+# because some of that income does get drained by these costs.
+# This is why our total cash on hand doesn't exclude these categories, only this viz
+exclude_cost_categories = [
+    "Grants to Other CS&S FSPs",
+    "Grants to Other Organizations",
+]
+cost_by_type = cost_by_type.query("Category not in @exclude_cost_categories")
 ```
 
 ```{code-cell} ipython3
@@ -245,9 +289,13 @@ ch.mark_bar().encode(
 ).interactive()
 ```
 
++++ {"user_expressions": []}
+
 ## Revenue
 
-+++ {"tags": ["remove-cell"]}
+See [data sources](#data-sources) for background on where this data comes from.
+
++++ {"tags": ["remove-cell"], "user_expressions": []}
 
 ### Load and process data
 
@@ -262,7 +310,7 @@ invoices = invoices.all()
 invoices = pd.DataFrame([r["fields"] for r in invoices])
 
 # Subset the revenue
-revenue = invoices.query("Type == 'ACCREC' and Status in ['PAID', 'AUTHORISED']")
+revenue = invoices.query("Type == 'ACCREC' and Status in ['PAID', 'AUTHORISED']").copy()
 ```
 
 ```{code-cell} ipython3
@@ -270,6 +318,9 @@ revenue = invoices.query("Type == 'ACCREC' and Status in ['PAID', 'AUTHORISED']"
 
 # Use DateTime
 revenue.loc[:, "Date"] = revenue["Date"].map(pd.to_datetime)
+
+# Only keep the latest months (see comments on accounts variable for explanation)
+revenue = revenue.query("Date > @start_date").copy()
 
 # Convert dollars to numbers
 numeric_cols = ["Amount"]
@@ -307,7 +358,9 @@ bar = ch.mark_bar().encode(
 bar
 ```
 
-Same plots but with `grants` removed because they are quite high.
++++ {"user_expressions": []}
+
+Same plots but with `grants` removed because they skew the visualizations.
 
 ```{code-cell} ipython3
 :tags: [remove-input, remove-stderr]
@@ -321,6 +374,8 @@ bar = ch.mark_bar().encode(
 ).interactive()
 bar
 ```
+
++++ {"user_expressions": []}
 
 **Hub Service revenue** with a monthly average
 
@@ -373,7 +428,7 @@ scatter = ch.mark_point(color="black").encode(
 bar + line + scatter
 ```
 
-+++ {"tags": ["remove-cell"]}
++++ {"tags": ["remove-cell"], "user_expressions": []}
 
 Broken down by anonymized paying community
 
@@ -427,6 +482,8 @@ bar = ch.mark_bar().encode(
 bar
 ```
 
++++ {"user_expressions": []}
+
 **Contract revenue as a percentage of monthly costs.**
 100% means that we have fully recovered our costs that month.
 
@@ -451,6 +508,8 @@ ln = alt.Chart(pd.DataFrame({'y': [1]})).mark_rule(strokeDash=[10, 10]).encode(y
 ch + ln
 ```
 
++++ {"user_expressions": []}
+
 ## Cloud costs recovery
 
 Below are our monthly cloud costs across all providers for our communities.
@@ -467,14 +526,15 @@ See https://github.com/2i2c-org/team-compass/issues/663 for an issue tracking th
 :tags: [remove-cell]
 
 # Group by month and separate out costs vs. revenues
-rebillable_category = "7101 Costs Rebillable to Customers"
-cloud_costs = accounts.query("Account == @rebillable_category").copy()
-cloud_costs = pd.melt(cloud_costs[["Date", "Cost", "Revenue"]], id_vars="Date", var_name="Kind").query("value > 0")
+cloud_costs = pd.melt(rebillable[["Date", "Cost", "Revenue"]], id_vars="Date", var_name="Kind").query("value != 0")
 cloud_costs = cloud_costs.groupby(["Kind"]).resample("M", on="Date").sum(numeric_only=True).reset_index()
+
+# Multiple by -1 so that costs become negative and revenue becomes positive
+cloud_costs.loc[:, "value"] *= -1
 
 # Pivot so that we can compare revenue to cost per month
 cloud_costs = pd.pivot(cloud_costs, index="Date", columns="Kind", values="value")
-cloud_costs["Net"] = cloud_costs["Revenue"] - cloud_costs["Cost"]
+cloud_costs["Net"] = cloud_costs["Revenue"] + cloud_costs["Cost"]
 
 # Now move back to long-form so we can plot
 cloud_costs = cloud_costs.stack()
@@ -485,8 +545,8 @@ cloud_costs = cloud_costs.reset_index()
 ```{code-cell} ipython3
 :tags: [remove-input, remove-stderr, remove-stdout]
 
-alt.Chart(cloud_costs, title="Cloud costs and recovery (present <--> past)").mark_bar().encode(
-    column=alt.Column("Date", sort="descending"),
+alt.Chart(cloud_costs, title="Cloud costs and recovery").mark_bar().encode(
+    column=alt.Column("Date"),
     x=alt.X("Kind", scale=alt.Scale(domain=["Cost", "Revenue", "Net"])),
     y="value",
     tooltip=["Kind", alt.Tooltip("value", format="$,.2f")],
@@ -494,11 +554,11 @@ alt.Chart(cloud_costs, title="Cloud costs and recovery (present <--> past)").mar
 ).interactive()
 ```
 
++++ {"user_expressions": []}
+
 ## Accounting tables
 
 Summary tables of revenue and cost by major category.
-Note that these are **reversed in time**.
-They begin with the latest updated month and end with our earliest month.
 
 ```{code-cell} ipython3
 :tags: [remove-cell]
@@ -513,6 +573,9 @@ def split_accounting_category(df):
     return df
     
 def visualize_df_with_sum(df, summary=True):
+    # So we don't over-write the DF
+    df = df.copy()
+
     if summary is True:
         # Add summary statistics
         df.loc["Sum", :] = df.sum(0).values
@@ -532,15 +595,19 @@ def visualize_df_with_sum(df, summary=True):
     return style
 ```
 
++++ {"user_expressions": []}
+
 ### Overview
 
 ```{code-cell} ipython3
 :tags: [remove-input]
 
-overall_summary_table = overall_summary.pivot(index="Category", values="value", columns="Date").sort_index(axis=1, ascending=False).loc[["Revenue", "Cost", "Net", "Cumulative"]]
+overall_summary_table = overall_summary.pivot(index="Category", values="value", columns="Date").loc[["Revenue", "Cost", "Net", "Cumulative"]]
 overall_summary_table = overall_summary_table.rename(index={"Cumulative": "Cash on Hand (end of month)"})
 visualize_df_with_sum(overall_summary_table, summary=False)
 ```
+
++++ {"user_expressions": []}
 
 ### Cost
 
@@ -556,10 +623,11 @@ costs_summary = costs_summary.unstack("Date")
 # Sort from least to most expensive and then by category
 costs_summary = costs_summary.loc[costs_summary.sum(1).sort_values().index]
 costs_summary = costs_summary.sort_index()
-costs_summary = costs_summary.sort_index(axis=1, ascending=False)
 
 visualize_df_with_sum(costs_summary)
 ```
+
++++ {"user_expressions": []}
 
 #### Anticipated annual total costs
 
@@ -576,13 +644,20 @@ def calculate_annual_average(series):
     sum_total = series.sum()
     n_extra = 12 - len(series)
     return sum_total + series.mean() * n_extra
-monthly_cost_total = costs_summary.loc["Sum"]
+
+# Remove the excluded categories since we're just estimating our costs here
+monthly_cost_total = costs_summary.query("Category not in @exclude_cost_categories").copy()
+monthly_cost_total = monthly_cost_total.sum(0)
 monthly_cost_total = (monthly_cost_total.rolling(12, min_periods=1).apply(calculate_annual_average).to_frame("Expected Annual Costs").T)
 style = monthly_cost_total.style.format("${:,.0f}", na_rep="$0")
 style.format_index("{:%B, %Y}", axis=1)
 ```
 
++++ {"user_expressions": []}
+
 ### Revenue
+
+_This excludes revenue we have invoiced but not yet received payment for._
 
 ```{code-cell} ipython3
 :tags: [remove-input]
@@ -592,7 +667,6 @@ revenue_summary = revenue_monthly.groupby(["Date", "Category"]).sum("Amount Paid
 
 # Only show the months that we have accounting information for
 # This way we know it's had time to be updated
-revenue_summary = revenue_summary.sort_index(axis=1, ascending=False)
 revenue_summary = revenue_summary.loc[:, costs_summary.columns[0]:]
 
 visualize_df_with_sum(revenue_summary)
