@@ -31,6 +31,7 @@ There are two data sources on this page, both of which are described in more det
 
 1. **CS&S's monthly accounting data dumps**.
    These contain every transaction that 2i2c has ever recorded with CS&S.
+   See [the data munging notebook for accounting data](scripts/munge_css_accounting_data.py) for information on how to update this data.
    See [our Team Compass Accounting page](https://compass.2i2c.org/en/latest/finance/accounting.html#raw-accounting-statements) for more information.
 2. **Revenue data in the `Invoices` AirTable**.
    It is synced from the CS&S AirTable that contains _all invoices for 2i2c_.
