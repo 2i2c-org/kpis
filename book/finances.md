@@ -16,8 +16,8 @@ kernelspec:
 
 # Accounting and finance
 
-This analyses two data streams that represent 2i2c's financial activity.[^1]
-It is meant to be used for both financial analysis and projection, as well as defining a few KPIs for sustainability and efficiency.
+This page summarizes 2i2c's financial picture, as well as our major cost and revenue trends.[^1]
+Its goal is to provide transparency about how money is flowing through our organization.
 
 Last updated: **{sub-ref}`today`**
 
@@ -70,6 +70,9 @@ from IPython.display import Markdown, display
 +++ {"user_expressions": []}
 
 ## Summary of cost and revenue
+
+This provides a high-level overview of our revenue and expenses over time.
+Months with a large influx of cash correspond to new grants that we have received, that are generally paid in batch amounts.
 
 ```{code-cell} ipython3
 :tags: [remove-cell]
