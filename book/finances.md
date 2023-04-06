@@ -24,7 +24,7 @@ Last updated: **{sub-ref}`today`**
 [^1]: Inspired by [James' AirTable demo](https://github.com/2i2c-org/dashboard/blob/main/AirTableIntegration.ipynb).
 
 (data-sources)=
-```{note} Data sources
+```{admonition} Data sources
 :class: dropdown
 
 There are two data sources on this page, both of them are AirTable tables that are synced from CS&S data:
