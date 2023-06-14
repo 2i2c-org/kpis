@@ -59,8 +59,12 @@ with Progress() as progress:
         for hub in config["hubs"]:
             hub_name = hub["domain"].replace(".2i2c.cloud", "")
             progress.update(p_hubs, description=f"Processing hub {hub_name}...")
-            resp = urlopen(f'https://{hub["domain"]}/metrics').read()
-            metrics = resp.decode().split("\n")
+            try:
+                resp = urlopen(f'https://{hub["domain"]}/metrics').read()
+                metrics = resp.decode().split("\n")
+            except Exception as exc:
+                print(f'Error for hub {hub["domain"]}:\n\n{exc}')
+                continue
 
             # Search for jupyterhub_active_users lines and grab their values
             for iline in metrics:
