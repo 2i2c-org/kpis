@@ -176,6 +176,7 @@ overall_summary = overall_summary.melt(id_vars="Date", var_name="Category")
 editable: true
 slideshow:
   slide_type: ''
+tags: [remove-input]
 ---
 category_plots = ["Revenue", "Cost", "Net"]
 category_colors = ["lightgreen", "red", "grey"]
@@ -218,16 +219,7 @@ chart = alt.Chart(overall_revenue_as_perc_of_costs.reset_index(), width=CHART_WI
 one_hundred = alt.Chart(pd.DataFrame({'y': [1]})).mark_rule().encode(y='y')
 cost_recovery_mean = alt.Chart(
     pd.DataFrame({'y': [overall_revenue_as_perc_of_costs_mean]})).mark_rule(strokeDash=[8,4], color="red").encode(y='y')
-chart + line + cost_recovery_mean
-```
-
-```{code-cell} ipython3
----
-editable: true
-slideshow:
-  slide_type: ''
----
-
+chart + one_hundred + cost_recovery_mean
 ```
 
 +++ {"user_expressions": [], "editable": true, "slideshow": {"slide_type": ""}}
