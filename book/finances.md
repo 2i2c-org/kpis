@@ -5,14 +5,14 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.5
+    jupytext_version: 1.15.2
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
 ---
 
-+++ {"user_expressions": []}
++++ {"user_expressions": [], "editable": true, "slideshow": {"slide_type": ""}}
 
 # Accounting and finance
 
@@ -34,7 +34,7 @@ There are two data sources on this page, both of them are AirTable tables that a
 
 ```
 
-+++ {"tags": ["remove-cell"], "user_expressions": []}
++++ {"tags": ["remove-cell"], "user_expressions": [], "editable": true, "slideshow": {"slide_type": ""}}
 
 ## Connect with our base
 
@@ -42,8 +42,12 @@ First we'll connect with our AirTable base via the [pyairtable python package](h
 See [AirTable IDs docs](https://support.airtable.com/docs/understanding-airtable-ids) for more information about how AirTable bases are structured.
 
 ```{code-cell} ipython3
-:tags: [remove-cell]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
 # Assume the API key is stored as an environment variable
 import os
 
@@ -59,15 +63,19 @@ base = Base(api_key, base_id)
 ```
 
 ```{code-cell} ipython3
-:tags: [remove-cell]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
 # Imports that we'll use later
 import altair as alt
 import pandas as pd
 from IPython.display import Markdown, display
 ```
 
-+++ {"user_expressions": []}
++++ {"user_expressions": [], "editable": true, "slideshow": {"slide_type": ""}}
 
 ## Summary of cost and revenue
 
@@ -75,8 +83,12 @@ This provides a high-level overview of our revenue and expenses over time.
 Months with a large influx of cash correspond to new grants that we have received, that are generally paid in batch amounts.
 
 ```{code-cell} ipython3
-:tags: [remove-cell]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
 # Start date for the records we'll display
 from datetime import datetime, timedelta
 
@@ -88,10 +100,14 @@ start_date = datetime(year=start_date.year, month=start_date.month, day=1)
 ```
 
 ```{code-cell} ipython3
-:tags: [remove-cell]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
 # All accounting data from CS&S
-accounts = base.get_table("tblDKGQFU0iEIa5Qb")
+accounts = base.table("tblDKGQFU0iEIa5Qb")
 records = accounts.all()
 accounts = pd.DataFrame([r["fields"] for r in records])
 accounts = accounts.rename(columns={"Debit": "Cost", "Credit": "Revenue"})
@@ -102,8 +118,12 @@ accounts = accounts.query("Date > @start_date")
 ```
 
 ```{code-cell} ipython3
-:tags: [remove-cell]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
 # Renames
 accounts = accounts.rename(columns={"Net": "Amount", "Category without number": "Category"})
 
@@ -124,14 +144,22 @@ accounts = accounts.query("Category != 'Costs Rebillable to Customers'").copy()
 ```
 
 ```{code-cell} ipython3
-:tags: [remove-cell]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
 CHART_WIDTH = 575
 ```
 
 ```{code-cell} ipython3
-:tags: [remove-cell]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
 # Summary of costs and revenue based on the books
 overall_summary = accounts.copy()[["Date", "Cost", "Revenue"]]
 
@@ -139,40 +167,70 @@ overall_summary = accounts.copy()[["Date", "Cost", "Revenue"]]
 overall_summary = overall_summary.resample("M", on="Date").agg("sum").reset_index()
 overall_summary["Net"] = overall_summary["Revenue"] - overall_summary["Cost"]
 
-# Flip cost so that it plots upside down
-overall_summary["Cost"] = -1 * overall_summary["Cost"]
-
 # Melt to long form for plotting
 overall_summary = overall_summary.melt(id_vars="Date", var_name="Category")
 ```
 
 ```{code-cell} ipython3
-:tags: [remove-input, remove-stderr, remove-stdout]
+---
+editable: true
+slideshow:
+  slide_type: ''
+---
+category_plots = ["Revenue", "Cost", "Net"]
+category_colors = ["lightgreen", "red", "grey"]
 
-# Plot net revenue, cumulative, and trend for next 6 months
-
-yformat = alt.Axis(format="$,f")
-
-plots = []
-for kind, color in zip(["Revenue", "Cost", "Net"], ["lightgreen", "red", "grey"]):
-    net = alt.Chart(overall_summary.query("Category == @kind"), title=f"Monthly {kind}", width=650)
-    net_br = net.mark_bar().encode(
-        y=alt.Y("value", axis=yformat),
-        x=alt.X("yearmonth(Date):O"),
-        tooltip=["Category", "value"],
-        color=alt.Color(
-            "Category",
-            scale=alt.Scale(
-                domain=[kind],
-                range=[color],
-            ),
-            legend=None,
+alt.Chart(overall_summary, title=f"Monthly costs, revenue, and net", width=75).mark_bar().encode(
+    y=alt.Y("value"),
+    x=alt.X("Category", scale=alt.Scale(domain=category_plots)),
+    column=alt.Column("yearmonth(Date):O"),
+    color=alt.Color(
+        "Category",
+        scale=alt.Scale(
+            domain=category_plots,
+            range=category_colors,
         ),
-    ).interactive()
-    display(net_br)
+    ),
+    tooltip=["Category", "value"],
+).interactive()
 ```
 
-+++ {"user_expressions": []}
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input]
+---
+perc_calculate = overall_summary.set_index("Date")
+overall_revenue_as_perc_of_costs =  perc_calculate.query("Category == 'Revenue'")["value"] / perc_calculate.query("Category == 'Cost'")["value"]
+overall_revenue_as_perc_of_costs_mean = overall_revenue_as_perc_of_costs.mean()
+chart = alt.Chart(overall_revenue_as_perc_of_costs.reset_index(), width=CHART_WIDTH, title="Percent costs recovered with revenue (6 month average in red)").mark_bar(width=50).encode(
+    x="yearmonth(Date):O",
+    y=alt.Y(
+        "value",
+        scale=alt.Scale(domain=[0, 2]),
+        axis=alt.Axis(format='%')
+    ),
+    tooltip=["Date", "value"],
+).interactive()
+
+one_hundred = alt.Chart(pd.DataFrame({'y': [1]})).mark_rule().encode(y='y')
+cost_recovery_mean = alt.Chart(
+    pd.DataFrame({'y': [overall_revenue_as_perc_of_costs_mean]})).mark_rule(strokeDash=[8,4], color="red").encode(y='y')
+chart + line + cost_recovery_mean
+```
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+---
+
+```
+
++++ {"user_expressions": [], "editable": true, "slideshow": {"slide_type": ""}}
 
 ## Costs
 
@@ -181,8 +239,12 @@ Monthly costs are based on accounting transactions, and broken down by major cat
 Costs are generated from CS&S's monthly accounting data dumps (see [data sources](#data-sources)).
 
 ```{code-cell} ipython3
-:tags: [remove-cell]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
 # Drop revenue rows
 costs = accounts.query("Cost > 0").drop(columns=["Revenue"])
 
@@ -218,8 +280,12 @@ costs["Kind"] = "cost"
 ```
 
 ```{code-cell} ipython3
-:tags: [remove-cell, remove-stderr]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell, remove-stderr]
+---
 # Group by month and aggregate by type
 cost_by_type = (
     costs.groupby([pd.Grouper(key="Date", freq="1M"), "Category"])
@@ -239,8 +305,12 @@ cost_by_type.loc[:, "Sort"] = cost_by_type["Category"].map(
 ```
 
 ```{code-cell} ipython3
-:tags: [remove-cell]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
 # Exclude a few categories that aren't representative of our spending
 # These do incur a real cost, but aren't helpful in knowing where our money goes
 # However we should make sure this doesn't skew our perception of our *income*
@@ -254,8 +324,12 @@ cost_by_type = cost_by_type.query("Category not in @exclude_cost_categories")
 ```
 
 ```{code-cell} ipython3
-:tags: [remove-input, remove-stderr]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input, remove-stderr]
+---
 ch = alt.Chart(cost_by_type, width=CHART_WIDTH, title="Monthly spending by category")
 ch.mark_bar().encode(
     x="yearmonth(Date):O",
@@ -271,8 +345,12 @@ ch.mark_bar().encode(
 ```
 
 ```{code-cell} ipython3
-:tags: [remove-input, remove-stderr]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input, remove-stderr]
+---
 by_date = cost_by_type.set_index(["Date", "Category"])["Cost"].unstack("Category")
 by_date_percentage = by_date.apply(lambda a: a / a.sum(), axis=1)
 by_date_percentage = by_date_percentage.stack("Category").reset_index(name="Percent")
@@ -290,24 +368,28 @@ ch.mark_bar().encode(
 ).interactive()
 ```
 
-+++ {"user_expressions": []}
++++ {"user_expressions": [], "editable": true, "slideshow": {"slide_type": ""}}
 
 ## Revenue
 
 Revenue is based on monthly invoicing data.
 See [data sources](#data-sources) for background on where this data comes from.
 
-+++ {"tags": ["remove-cell"], "user_expressions": []}
++++ {"tags": ["remove-cell"], "user_expressions": [], "editable": true, "slideshow": {"slide_type": ""}}
 
 ### Load and process data
 
 Load the CS&S invoice data from AirTable as a DataFrame.
 
 ```{code-cell} ipython3
-:tags: [remove-cell]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
 # Revenue data from CS&S
-invoices = base.get_table("tblkmferOITqS2vH8")
+invoices = base.table("tblkmferOITqS2vH8")
 invoices = invoices.all()
 invoices = pd.DataFrame([r["fields"] for r in invoices])
 
@@ -316,13 +398,20 @@ revenue = invoices.query("Type == 'ACCREC' and Status in ['PAID', 'AUTHORISED']"
 ```
 
 ```{code-cell} ipython3
-:tags: [remove-cell]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
 # Use DateTime
 revenue.loc[:, "Date"] = revenue["Date"].map(pd.to_datetime)
 
 # Only keep the latest months (see comments on accounts variable for explanation)
 revenue = revenue.query("Date > @start_date").copy()
+
+# Drop missing values
+revenue = revenue.dropna()
 
 # Convert dollars to numbers
 numeric_cols = ["Amount"]
@@ -338,8 +427,12 @@ revenue.loc[:, "Kind"] = "revenue"
 ```
 
 ```{code-cell} ipython3
-:tags: [remove-input, remove-stderr]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input, remove-stderr]
+---
 # Group by category and month
 revenue_monthly = (
     revenue.groupby([pd.Grouper(key="Date", freq="1M"), "Category", "Contact", "Status"])
@@ -349,8 +442,12 @@ revenue_monthly = (
 ```
 
 ```{code-cell} ipython3
-:tags: [remove-input, remove-stderr]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input, remove-stderr]
+---
 # Sum the revenue within each category
 ch = alt.Chart(revenue_monthly, width=CHART_WIDTH, title="Monthly revenue by category")
 bar1 = ch.mark_bar().encode(
@@ -372,13 +469,17 @@ bar2 = ch.mark_bar().encode(
 display(bar2)
 ```
 
-+++ {"user_expressions": []}
++++ {"user_expressions": [], "editable": true, "slideshow": {"slide_type": ""}}
 
 Same revenue plot as above, but with `grants` removed because they skew the visualizations.
 
 ```{code-cell} ipython3
-:tags: [remove-input, remove-stderr]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input, remove-stderr]
+---
 revenue_monthly_nogrants = revenue_monthly.loc[~revenue_monthly["Category"].str.contains("Grant")]
 ch = alt.Chart(revenue_monthly_nogrants, width=CHART_WIDTH, title="Monthly revenue by category (no grants)")
 bar = ch.mark_bar().encode(
@@ -388,4 +489,13 @@ bar = ch.mark_bar().encode(
     tooltip=["Category", "Amount"],
 ).interactive()
 bar
+```
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+---
+
 ```
