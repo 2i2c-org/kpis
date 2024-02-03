@@ -5,14 +5,11 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.1
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
-mystnb:
-  remove_code_source: true
-  output_stderr: remove
 ---
 
 # Upstream community activity
@@ -63,7 +60,7 @@ if path_data.exists():
     DATETIME_COLUMNS = ["createdAt", "updatedAt", "closedAt"]
     data = pd.read_csv(path_data, parse_dates=DATETIME_COLUMNS)
 else:
-    print("No data found, please run `python ../scripts/download_github_data.py`")
+    print("No data found, please run `python scripts/download_github_data.py`")
 ```
 
 ```{code-cell} ipython3
@@ -147,13 +144,17 @@ def visualize_over_time(df, on="updatedAt", title=""):
     return ch
 ```
 
++++ {"editable": true, "slideshow": {"slide_type": ""}}
+
 ## Comments by a 2i2c team member
 
 Comments are a reflection of where we're participating in conversations, discussions, brainstorming, guiding others, etc. They are a reflection of "overall activity" because comments tend to happen everywhere, and may not be associated with a specific change to the code.
 
-```{code-cell} ipython3
-visualize_over_time(comments.query("author in @team"), title="Comments made by a team member, over time")
-```
++++ {"editable": true, "slideshow": {"slide_type": ""}}
+
+visualize_over_time(comments, title="Comments made by a team member, over time")
+
++++
 
 Now we break it down by repository to visualize where this activity has been directed.
 
@@ -165,7 +166,7 @@ Click a bar to show a GitHub search that roughly corresponds to the underlying d
 visualize_by_org_repo(comments, kind="commenter", title="Comments by a team member, by repository.")
 ```
 
-+++ {"tags": []}
++++ {"editable": true, "slideshow": {"slide_type": ""}}
 
 ## Issues opened by team members
 
@@ -173,10 +174,17 @@ This shows issues that a 2i2c team member has opened over time.
 This gives an idea of where we are noticing issues and suggesting improvements in upstream repositories.
 
 ```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+---
 issues = data.loc[["issues/" in ii for ii in data["url"].values]]
 issuesByUs = issues.dropna(subset="createdAt").query("author in @team")
-visualize_over_time(issuesByUs,on="closedAt", title="Issues opened by a team member, over time")
+visualize_over_time(issuesByUs, on="closedAt", title="Issues opened by a team member, over time")
 ```
+
++++ {"editable": true, "slideshow": {"slide_type": ""}}
 
 Now we break it down by repository to visualize where this activity has been directed.
 
@@ -185,10 +193,13 @@ Click a bar to show a GitHub search that roughly corresponds to the underlying d
 ```
 
 ```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+---
 visualize_by_org_repo(issuesByUs, "Issues opened by a team member, by repository", kind="author")
 ```
-
-+++ {"tags": []}
 
 ## Merged PRs authored by team members
 
@@ -196,6 +207,11 @@ Pull Requests that were authored by a 2i2c team member, and merged by anyone.
 This gives an idea of where we're committing code, documentation, and team policy improvements.
 
 ```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+---
 authoredByUs = data.dropna(subset="closedAt").query("author in @team")
 visualize_over_time(authoredByUs, on="closedAt", title="PRs authored by a team member that were merged, over time")
 ```
@@ -226,5 +242,10 @@ Click a bar to show a GitHub search that roughly corresponds to the underlying d
 ```
 
 ```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+---
 visualize_by_org_repo(mergedByUs, title="PRs merged by a team member, by repository")
 ```

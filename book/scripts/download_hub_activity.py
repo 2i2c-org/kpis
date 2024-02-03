@@ -1,5 +1,5 @@
 """
-Download activer user data from each of our JupyterHubs and save them to a CSV.
+Download active user data from each of our JupyterHubs and save them to a CSV.
 This uses the cluster and hub data in our config folder, and grabs the active users
 data from the `metrics/` endpoint of each JupyterHub we run.
 
