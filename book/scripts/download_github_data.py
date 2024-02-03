@@ -1,3 +1,8 @@
+"""
+Scrape GitHub activity in key stakeholder GitHub organizations for
+all of 2i2c's team members. Store them in a local CSV file that is
+used in visualization notebooks to plot activity over time.
+"""
 from github_activity import get_activity
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -30,11 +35,10 @@ else:
 ##
 # Determine which dates we need to grab new data
 ##
-# We only want the last 3 months, so figure out our start and end dates
-# If we already have data, then the start date is:
-#    whatever is later of (last data date, and today - 3 months)
 # Use two quarters of data
-N_DAYS = 180
+N_DAYS = 182
+# Use last year of data (for larger reports and grants)
+# N_DAYS = 365 + 90
 today = datetime.now(tz=ZoneInfo("UTC"))
 time_window_begin = today - timedelta(days=N_DAYS)
 time_window_end = today

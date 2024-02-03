@@ -5,12 +5,14 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.4
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
 ---
+
++++ {"editable": true, "slideshow": {"slide_type": ""}}
 
 % CSS for the big numbers
 
@@ -147,20 +149,19 @@ We break our hubs into two groups as some hubs have orders of magnitude more use
 ```{code-cell} ipython3
 :tags: [remove-input, remove-stderr, remove-stdout]
 
-queries = ["< 150", ">= 150"]
-for qu in queries:
-    hubs_small = df.query(f"users {qu} and scale=='Weekly'")["hub"].values
-    chs = []
-    groups = df.query("hub in @hubs_small").groupby("scale")
-    for scale in scale_ordering:
-        idata = groups.get_group(scale)
-        ch = alt.Chart(idata, title=f"{scale} users").mark_bar().encode(
-            alt.X("users:Q", bin=True),
-            y='count()',
-            color="scale",
-            tooltip=["users", "hub"],
-        ).interactive()
-        chs.append(ch)
-    display(Markdown(f"**For hubs {qu} weekly users.**"))
-    display(alt.hconcat(*chs))
+chs = []
+groups = df.groupby("scale")
+for scale in scale_ordering:
+    idata = groups.get_group(scale)
+    # ref for log plot: https://github.com/altair-viz/altair/issues/1074#issuecomment-411861659
+    ch = alt.Chart(idata, title=f"{scale} users").transform_calculate(
+        logusers = 'log(max(datum.users, 1))/log(10)'
+    ).mark_bar().encode(
+        alt.X("logusers:Q", bin=True),
+        y='count()',
+        color="cluster",
+        tooltip=["users", "hub"],
+    ).interactive()
+    chs.append(ch)
+display(alt.hconcat(*chs))
 ```
