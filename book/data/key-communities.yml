@@ -1,4 +1,6 @@
+- "binder-examples"
 - "jupyter"
 - "jupyterhub"
+- "jupyterlab"
 - "executablebooks"
 - "2i2c-org"

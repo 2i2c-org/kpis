@@ -6,7 +6,10 @@ only_build_toc_files = True
 
 myst_enable_extensions = [
   "linkify",
+  "colon_fence",
 ]
+
+nb_render_markdown_format = "myst"
 
 html_title = "2i2c KPIs"
 html_theme = "sphinx_2i2c_theme"
