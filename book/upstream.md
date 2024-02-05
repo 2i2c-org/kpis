@@ -24,8 +24,12 @@ Use this to get a high-level view, but don't read too much into the details.
 ```
 
 ```{code-cell} ipython3
-:tags: [remove-cell]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
 from github_activity import get_activity
 from datetime import datetime, timedelta
 import pandas as pd
@@ -37,6 +41,7 @@ from subprocess import run
 import json
 from ast import literal_eval
 from IPython.display import Markdown
+from urllib.parse import quote
 ```
 
 +++ {"tags": ["remove-cell"]}
@@ -48,6 +53,7 @@ from IPython.display import Markdown
 
 # Load data that we'll use for visualization
 communities = safe_load(Path("data/key-communities.yml").read_text())
+communities = list(filter(lambda a: a != "2i2c-org", communities))
 team = safe_load(Path("data/team.yml").read_text())
 ```
 
@@ -64,6 +70,12 @@ else:
 ```
 
 ```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input]
+---
 # Drop the 2i2c-org community because it's not upstream
 data = data.query("org != '2i2c-org'")
 
@@ -75,8 +87,12 @@ Markdown(f"Showing data from **{earliest:%Y-%m-%d}** to **{latest:%Y-%m-%d}**")
 ```
 
 ```{code-cell} ipython3
-:tags: [remove-cell]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
 # Pull out the comments into our own dataframe
 new_comments = []
 for _, row in data.iterrows():
@@ -99,8 +115,12 @@ comments = comments.loc[comments["updatedAt"] > earliest]
 ```
 
 ```{code-cell} ipython3
-:tags: [remove-cell]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
 # Helper functions for visualization
 def visualize_by_org_repo(df, title="", number=25, kind="involves"):
     df_counts = df.groupby(["org", "repo"]).count().iloc[:, 0].sort_values(ascending=False)
@@ -144,61 +164,22 @@ def visualize_over_time(df, on="updatedAt", title=""):
     return ch
 ```
 
-+++ {"editable": true, "slideshow": {"slide_type": ""}}
+## Key upstream communities
 
-## Comments by a 2i2c team member
+Key upstream communities are communities that 2i2c utilizes, empowers, and supports.
+We try to use technology from these communities wherever possible, and put additional team resources towards making upstream contributions and providing general support.
 
-Comments are a reflection of where we're participating in conversations, discussions, brainstorming, guiding others, etc. They are a reflection of "overall activity" because comments tend to happen everywhere, and may not be associated with a specific change to the code.
-
-+++ {"editable": true, "slideshow": {"slide_type": ""}}
-
-visualize_over_time(comments, title="Comments made by a team member, over time")
-
-+++
-
-Now we break it down by repository to visualize where this activity has been directed.
-
-```{tip}
-Click a bar to show a GitHub search that roughly corresponds to the underlying data.
-```
-
-```{code-cell} ipython3
-visualize_by_org_repo(comments, kind="commenter", title="Comments by a team member, by repository.")
-```
-
-+++ {"editable": true, "slideshow": {"slide_type": ""}}
-
-## Issues opened by team members
-
-This shows issues that a 2i2c team member has opened over time.
-This gives an idea of where we are noticing issues and suggesting improvements in upstream repositories.
+Below are 2i2c's key upstream communities:
 
 ```{code-cell} ipython3
 ---
 editable: true
 slideshow:
   slide_type: ''
+tags: [remove-input]
 ---
-issues = data.loc[["issues/" in ii for ii in data["url"].values]]
-issuesByUs = issues.dropna(subset="createdAt").query("author in @team")
-visualize_over_time(issuesByUs, on="closedAt", title="Issues opened by a team member, over time")
-```
-
-+++ {"editable": true, "slideshow": {"slide_type": ""}}
-
-Now we break it down by repository to visualize where this activity has been directed.
-
-```{tip}
-Click a bar to show a GitHub search that roughly corresponds to the underlying data.
-```
-
-```{code-cell} ipython3
----
-editable: true
-slideshow:
-  slide_type: ''
----
-visualize_by_org_repo(issuesByUs, "Issues opened by a team member, by repository", kind="author")
+communities_list = "\n".join(f"- [{community}](https:github.com/{community})" for community in communities)
+Markdown(f"Key upstream communities:\n\n{communities_list}")
 ```
 
 ## Merged PRs authored by team members
@@ -206,11 +187,38 @@ visualize_by_org_repo(issuesByUs, "Issues opened by a team member, by repository
 Pull Requests that were authored by a 2i2c team member, and merged by anyone.
 This gives an idea of where we're committing code, documentation, and team policy improvements.
 
+The plots below show recent activity over a 2-quarter window, while the button below runs a GitHub search for all activity since 2i2c's creation.
+
+````{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input]
+---
+# A GitHub search query for all merged PRs by 2i2c team members that
+# were merged since 2i2c's creation.
+pr_search_query = "+".join([f"author:{member}" for member in team])
+pr_search_query = pr_search_query + "+" + "+".join([f"org:{org}" for org in communities])
+pr_search_query = f"{pr_search_query}+is:pr+merged:>=2020-12-01"
+
+pr_search_url = f"https://github.com/search?q={pr_search_query}"
+
+Markdown(f"""\
+```{{card}} All Merged PRs authored by 2i2c team members in key upstream communities
+:link: {pr_search_url}
+
+Click to see GitHub search
+```
+""")
+````
+
 ```{code-cell} ipython3
 ---
 editable: true
 slideshow:
   slide_type: ''
+tags: [remove-input]
 ---
 authoredByUs = data.dropna(subset="closedAt").query("author in @team")
 visualize_over_time(authoredByUs, on="closedAt", title="PRs authored by a team member that were merged, over time")
@@ -223,6 +231,12 @@ Click a bar to show a GitHub search that roughly corresponds to the underlying d
 ```
 
 ```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input]
+---
 visualize_by_org_repo(authoredByUs, kind="mergedBy", title="PRs authored by a team member that were merged, by repository")
 ```
 
@@ -231,6 +245,12 @@ visualize_by_org_repo(authoredByUs, kind="mergedBy", title="PRs authored by a te
 This gives an idea of which Pull Requests were **merged** by a team member (not necessarily authored). Merging Pull Requests is a reflection of reviewing and incorporating the work of _others_ as opposed to only our own work.
 
 ```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input]
+---
 mergedByUs = data.dropna(subset="closedAt").query("mergedBy in @team")
 visualize_over_time(mergedByUs, on="closedAt", title="PRs merged by a team member, over time")
 ```
@@ -246,6 +266,98 @@ Click a bar to show a GitHub search that roughly corresponds to the underlying d
 editable: true
 slideshow:
   slide_type: ''
+tags: [remove-input]
 ---
 visualize_by_org_repo(mergedByUs, title="PRs merged by a team member, by repository")
+```
+
++++ {"editable": true, "slideshow": {"slide_type": ""}}
+
+## Issues opened by team members
+
+This shows issues that a 2i2c team member has opened over time.
+This gives an idea of where we are noticing issues and suggesting improvements in upstream repositories.
+The plots below show recent activity over a 2-quarter window, while the button below runs a GitHub search for all activity since 2i2c's creation.
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input]
+---
+# A GitHub search query for all opened issues by 2i2c team members
+# since 2i2c's creation.
+pr_search_query = "+".join([f"author:{member}" for member in team])
+pr_search_query = pr_search_query + "+" + "+".join([f"org:{org}" for org in communities])
+pr_search_query = f"{pr_search_query}+is:issue+created:>=2020-12-01"
+
+pr_search_url = f"https://github.com/search?q={pr_search_query}"
+
+Markdown(f"""\
+:::{{card}} All Issues opened by 2i2c team members in key upstream communities.
+:link: {pr_search_url}
+
+Click to see GitHub search.
+
+:::
+""")
+```
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input]
+---
+issues = data.loc[["issues/" in ii for ii in data["url"].values]]
+issuesByUs = issues.dropna(subset="createdAt").query("author in @team")
+visualize_over_time(issuesByUs, on="closedAt", title="Issues opened by a team member, over time")
+```
+
++++ {"editable": true, "slideshow": {"slide_type": ""}}
+
+Now we break it down by repository to visualize where this activity has been directed.
+
+:::{tip}
+Click a bar to show a GitHub search that roughly corresponds to the underlying data.
+:::
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input]
+---
+visualize_by_org_repo(issuesByUs, "Issues opened by a team member, by repository", kind="author")
+```
+
++++ {"editable": true, "slideshow": {"slide_type": ""}}
+
+## Comments by a 2i2c team member
+
+Comments are a reflection of where we're participating in conversations, discussions, brainstorming, guiding others, etc. They are a reflection of "overall activity" because comments tend to happen everywhere, and may not be associated with a specific change to the code.
+
++++ {"editable": true, "slideshow": {"slide_type": ""}}
+
+visualize_over_time(comments, title="Comments made by a team member, over time")
+
++++ {"editable": true, "slideshow": {"slide_type": ""}}
+
+Now we break it down by repository to visualize where this activity has been directed.
+
+:::{tip}
+Click a bar to show a GitHub search that roughly corresponds to the underlying data.
+:::
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input]
+---
+visualize_by_org_repo(comments, kind="commenter", title="Comments by a team member, by repository.")
 ```
