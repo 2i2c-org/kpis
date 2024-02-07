@@ -13,12 +13,16 @@ from yaml import safe_load
 from tomlkit import parse
 from pathlib import Path
 from copy import deepcopy
+from subprocess import run
 
 # Define here based on whether we're interactive
 if "__file__" in globals():
     here = Path(__file__).parent
 else:
     here = Path(".")
+
+# Ensure key communities is downloaded
+run(["python", here / "download_key_communities.py"], cwd=here, check=True)
 
 # Load data that we'll use for visualization
 communities = parse(Path(here / "../data/key-communities.toml").read_text())[
