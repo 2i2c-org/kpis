@@ -42,6 +42,7 @@ import json
 from ast import literal_eval
 from IPython.display import Markdown
 from urllib.parse import quote
+from tomlkit import parse
 ```
 
 +++ {"tags": ["remove-cell"]}
@@ -52,7 +53,8 @@ from urllib.parse import quote
 :tags: [remove-cell]
 
 # Load data that we'll use for visualization
-communities = safe_load(Path("data/key-communities.yml").read_text())
+with Path("data/key-communities.toml").open() as ff:
+    communities = parse(ff.read())["communities"]
 communities = list(filter(lambda a: a != "2i2c-org", communities))
 team = safe_load(Path("data/team.yml").read_text())
 ```
@@ -168,6 +170,7 @@ def visualize_over_time(df, on="updatedAt", title=""):
 
 Key upstream communities are communities that 2i2c utilizes, empowers, and supports.
 We try to use technology from these communities wherever possible, and put additional team resources towards making upstream contributions and providing general support.
+See [the 2i2c team compass](inv:tc#open-source/key-communities) for more information about this.
 
 Below are 2i2c's key upstream communities:
 
