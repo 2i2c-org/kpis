@@ -10,6 +10,7 @@ linkify-it-py
 rich
 sphinx-design
 sphinx-togglebutton
+tomlkit
 
 # For developing
 itables
