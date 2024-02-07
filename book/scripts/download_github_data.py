@@ -7,9 +7,9 @@ from github_activity import get_activity
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import pandas as pd
-import numpy as np
 import os
 from yaml import safe_load
+from tomlkit import parse
 from pathlib import Path
 from copy import deepcopy
 
@@ -20,7 +20,7 @@ else:
     here = Path(".")
 
 # Load data that we'll use for visualization
-communities = safe_load((here / "../data/key-communities.yml").read_text())
+communities = parse(Path(here / "../data/key-communities.toml").read_text())["communities"]
 team = safe_load((here / "../data/team.yml").read_text())
 
 # If data already exists locally, load it
