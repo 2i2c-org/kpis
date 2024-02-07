@@ -18,9 +18,9 @@
 # ## Instructions
 #
 # - Download latest data from our [Accounting Statements Folder](https://docs.google.com/spreadsheets/d/1PDpPAed_q35n1-xSNN1U9tzZg7tzzBVfpmGYFqMOneQ/edit?usp=share_link)
-#   
+#
 #   > For example, here's [the account transactions up to 2023/01/31](https://docs.google.com/spreadsheets/d/1PDpPAed_q35n1-xSNN1U9tzZg7tzzBVfpmGYFqMOneQ/edit#gid=686580753)).
-#   
+#
 # - Move to the `_data` folder here
 # - Run this notebook
 # - The final cell will copy the munged data to your clipboard
@@ -51,7 +51,7 @@ category_mapping = {}
 for irow in category_rows["Date"].values:
     key, val = irow.split(" ", 1)
     category_mapping[int(key)] = val
-    
+
 # Remove the "summary" lines from our account codes
 data = data.dropna(subset=["Source"])
 
@@ -65,7 +65,7 @@ for ix, irow in data.iterrows():
         inet = f"-{inet}"
     for ichar in [",", "(", ")"]:
         inet = inet.replace(ichar, "")
-    
+
     # Make inet a float to make sure it's possible
     inet = float(inet)
 
@@ -77,7 +77,7 @@ for ix, irow in data.iterrows():
     else:
         data.loc[ix, "Cost"] = inet
         data.loc[ix, "Revenue"] = 0
-        
+
 data = data.drop(columns=["Net"])
 
 # + [markdown] user_expressions=[]
@@ -94,5 +94,3 @@ data.to_clipboard(index=False)
 # -
 
 data
-
-
