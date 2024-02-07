@@ -3,6 +3,7 @@ Scrape GitHub activity in key stakeholder GitHub organizations for
 all of 2i2c's team members. Store them in a local CSV file that is
 used in visualization notebooks to plot activity over time.
 """
+
 from github_activity import get_activity
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -20,7 +21,9 @@ else:
     here = Path(".")
 
 # Load data that we'll use for visualization
-communities = parse(Path(here / "../data/key-communities.toml").read_text())["communities"]
+communities = parse(Path(here / "../data/key-communities.toml").read_text())[
+    "communities"
+]
 team = safe_load((here / "../data/team.yml").read_text())
 
 # If data already exists locally, load it
@@ -47,7 +50,7 @@ time_window_end = today
 if data is not None:
     max_in_data = data["updatedAt"].max()
     if max_in_data > time_window_begin:
-        time_window_begin = max_in_data  
+        time_window_begin = max_in_data
 
 # Uncomment this to manually define a start date
 # start = datetime(2023, 1, 10, tzinfo=ZoneInfo("UTC"))
@@ -65,16 +68,18 @@ time_breakpoints.append(time_window_end)
 # Download latest batch of data from GitHub
 for community in communities:
     if time_window_end > today:
-        print(f"time_window_end date {time_window_end} is less than {today}, no data to update...")
+        print(
+            f"time_window_end date {time_window_end} is less than {today}, no data to update..."
+        )
         continue
 
     # Download the data from GitHub using github_activity
     # We do this in windows of 2 months and then concat in one DataFrame
     data_new = []
     for ii in range(1, len(time_breakpoints)):
-        start_time = time_breakpoints[ii-1]
+        start_time = time_breakpoints[ii - 1]
         stop_time = time_breakpoints[ii]
-        
+
         # Check for GitHub api authentication tokens and raise an error if none exist
         auth_keys = ["TOKEN_GITHUB_READONLY", "GITHUB_TOKEN"]
         for key in auth_keys:
@@ -83,13 +88,21 @@ for community in communities:
                 break
             auth = None
         if auth is None:
-            print("No GitHub authentication token found, you will hit the rate limit...")
+            print(
+                "No GitHub authentication token found, you will hit the rate limit..."
+            )
             print(f"Searched for these key names: {auth_keys}")
 
-        print(f"Downloading activity in {community} from {start_time:%Y-%m-%d} to {stop_time:%Y-%m-%d}")
-        data_new.append(get_activity(community, f"{start_time:%Y-%m-%d}", f"{stop_time:%Y-%m-%d}", auth=auth))
+        print(
+            f"Downloading activity in {community} from {start_time:%Y-%m-%d} to {stop_time:%Y-%m-%d}"
+        )
+        data_new.append(
+            get_activity(
+                community, f"{start_time:%Y-%m-%d}", f"{stop_time:%Y-%m-%d}", auth=auth
+            )
+        )
     data_new = pd.concat(data_new)
-    
+
     # Clean up some fields so they're easier to work with later
     def _extract_node(item):
         """Extract any data that is nested in GraphQL sections."""
@@ -106,15 +119,16 @@ for community in communities:
                 return item["oid"]
         else:
             return item
+
     data_new = data_new.applymap(_extract_node)
-    
+
     # Extract values from a few special-case columns
     data_new["mergedBy"]
-    
+
     # Change datetime strings to objects
     for col in datetime_columns:
         data_new[col] = pd.to_datetime(data_new[col])
-        
+
     # Save our final data or append it to pre-existing data
     if data is None:
         data = data_new

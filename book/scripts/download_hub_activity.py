@@ -5,6 +5,7 @@ data from the `metrics/` endpoint of each JupyterHub we run.
 
 ref: https://github.com/2i2c-org/infrastructure/tree/master/config/clusters
 """
+
 from rich import print
 from rich.progress import Progress
 import pandas as pd
@@ -24,10 +25,12 @@ from glob import glob
 
 # Download the `infrastructure/` repository as a Zip file so we can inspect contents
 # For now we don't use a token because this *should* only be a single operation.
-URL_REPOSITORY_ZIP = "https://github.com/2i2c-org/infrastructure/archive/refs/heads/master.zip"
+URL_REPOSITORY_ZIP = (
+    "https://github.com/2i2c-org/infrastructure/archive/refs/heads/master.zip"
+)
 with urlopen(URL_REPOSITORY_ZIP) as zipresp:
     with ZipFile(BytesIO(zipresp.read())) as zfile:
-        zfile.extractall('./_build/data/')
+        zfile.extractall("./_build/data/")
 
 # These are the time scales that we know are in the hub's metrics
 search_time_scales = {"24h": "Daily", "7d": "Weekly", "30d": "Monthly"}
@@ -45,7 +48,9 @@ with Progress() as progress:
         if not cluster_yaml.exists():
             print(f"Skipping folder {cluster} because no cluster.yaml file exists...")
             continue
-        progress.update(p_clusters, description=f"Processing cluster {cluster.split('/')[-1]}...")
+        progress.update(
+            p_clusters, description=f"Processing cluster {cluster.split('/')[-1]}..."
+        )
         config = cluster_yaml.read_text()
         config = safe_load(config)
 
@@ -70,21 +75,23 @@ with Progress() as progress:
             for iline in metrics:
                 if "jupyterhub_active_users" not in iline:
                     continue
-                    
+
                 # We expect three time scales per hub
                 for scale, name in search_time_scales.items():
                     if scale in iline:
                         users = int(float(iline.split()[-1]))
-                        df.append({
-                            "cluster": cluster.split("/")[-1],
-                            "hub": hub["domain"],
-                            "scale": name,
-                            "users": users,
-                            "chart": hub["helm_chart"]
-                        })
+                        df.append(
+                            {
+                                "cluster": cluster.split("/")[-1],
+                                "hub": hub["domain"],
+                                "scale": name,
+                                "users": users,
+                                "chart": hub["helm_chart"],
+                            }
+                        )
             progress.update(p_hubs, advance=1)
         progress.update(p_clusters, advance=1)
-      
+
 # Convert to a to save as a CSV
 df = pd.DataFrame(df)
 path_out = Path(__file__).parent / ".." / "data" / "hub-activity.csv"
