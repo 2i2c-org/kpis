@@ -19,6 +19,11 @@ kernelspec:
 This page summarizes 2i2c's financial picture, as well as our major cost and revenue trends.[^1]
 Its goal is to provide transparency about how money is flowing through our organization.
 
+```{admonition} This data is not currently reliable
+We've learned from CS&S that their AirTable accounting data is not reliable enough to use here.
+We'll update this once we learn more.
+```
+
 Last updated: **{sub-ref}`today`**
 
 [^1]: Inspired by [James' AirTable demo](https://github.com/2i2c-org/dashboard/blob/main/AirTableIntegration.ipynb).
