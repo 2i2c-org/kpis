@@ -26,7 +26,7 @@ from glob import glob
 # Download the `infrastructure/` repository as a Zip file so we can inspect contents
 # For now we don't use a token because this *should* only be a single operation.
 URL_REPOSITORY_ZIP = (
-    "https://github.com/2i2c-org/infrastructure/archive/refs/heads/master.zip"
+    "https://github.com/2i2c-org/infrastructure/archive/refs/heads/main.zip"
 )
 with urlopen(URL_REPOSITORY_ZIP) as zipresp:
     with ZipFile(BytesIO(zipresp.read())) as zfile:
@@ -35,7 +35,7 @@ with urlopen(URL_REPOSITORY_ZIP) as zipresp:
 # These are the time scales that we know are in the hub's metrics
 search_time_scales = {"24h": "Daily", "7d": "Weekly", "30d": "Monthly"}
 
-clusters = glob("_build/data/infrastructure-master/config/clusters/*")
+clusters = glob("_build/data/infrastructure-main/config/clusters/*")
 clusters = list(filter(lambda a: a != "templates", clusters))
 
 df = []
