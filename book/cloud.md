@@ -146,6 +146,10 @@ Markdown(grid % "\n".join(interior))
 Active users broken down by each hub that we run.
 We break our hubs into two groups as some hubs have orders of magnitude more users than others.
 
++++
+
+#### Count hubs by community size
+
 ```{code-cell} ipython3
 ---
 editable: true
@@ -174,6 +178,49 @@ for scale in scale_ordering:
 display(alt.hconcat(*chs))
 ```
 
-```{code-cell} ipython3
+#### Total number of users binned by community size
 
+Tells us the percentage of our userbase that comes from different community sizes.
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input, remove-stderr, remove-stdout]
+---
+chs = []
+chs_perc = []
+groups = df.groupby("scale")
+for scale in scale_ordering:
+    # Calculate bins 
+    idata = groups.get_group(scale).copy()
+    bins = [0, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
+    labels = [f"{bins[ii]}-{bins[ii+1]}" for ii in range(len(bins)-1)]
+    idata["bin"] = pd.cut(idata["users"], bins, labels=labels, right=False)
+    
+    # Number of communities in each bin chart
+    binned_data = idata.groupby('bin').size().reset_index(name='count')
+    # ref for log plot: https://github.com/altair-viz/altair/issues/1074#issuecomment-411861659
+    ch = alt.Chart(idata, title=f"{scale} users").mark_bar().encode(
+        alt.X("bin:O", scale=alt.Scale(domain=labels), axis=alt.Axis(labelAngle=-45), title=f"{scale} Active Users"),
+        y=alt.Y('users', title="Number of users"),
+        color="cluster",
+        tooltip=["users", "hub"],
+    ).interactive()
+    chs.append(ch)
+
+    # Percentage breakdown chart
+    bin_sums = idata.groupby("bin").sum()["users"]
+    bin_sums = bin_sums / bin_sums.sum()
+    ch_perc = alt.Chart(bin_sums.reset_index(), title="% Monthly Active Users by community size").mark_bar().encode(
+        x = "bin",
+        y = alt.Y("users", axis=alt.Axis(format='%')),
+        tooltip=["bin", alt.Tooltip("users", format='.0%')],
+    ).interactive()
+    chs_perc.append(ch_perc)
+
+# Display the charts
+display(alt.hconcat(*chs))
+display(alt.hconcat(*chs_perc))
 ```
