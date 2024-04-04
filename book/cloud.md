@@ -129,7 +129,7 @@ grid = """
 %s
 ````
 """
-scale_ordering = ["Daily", "Weekly", "Monthly"]
+scale_ordering = ["Monthly", "Weekly", "Daily"]
 interior = []
 for scale in scale_ordering:
     users = df.query("scale==@scale")["users"].sum()
@@ -147,21 +147,33 @@ Active users broken down by each hub that we run.
 We break our hubs into two groups as some hubs have orders of magnitude more users than others.
 
 ```{code-cell} ipython3
-:tags: [remove-input, remove-stderr, remove-stdout]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input, remove-stderr, remove-stdout]
+---
 chs = []
 groups = df.groupby("scale")
 for scale in scale_ordering:
-    idata = groups.get_group(scale)
+    idata = groups.get_group(scale).copy()
+
+    # Calculate bins 
+    bins = [0, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
+    labels = [f"{bins[ii]}-{bins[ii+1]}" for ii in range(len(bins)-1)]
+    idata["bin"] = pd.cut(idata["users"], bins, labels=labels, right=False)
+    binned_data = idata.groupby('bin').size().reset_index(name='count')
     # ref for log plot: https://github.com/altair-viz/altair/issues/1074#issuecomment-411861659
-    ch = alt.Chart(idata, title=f"{scale} users").transform_calculate(
-        logusers = 'log(max(datum.users, 1))/log(10)'
-    ).mark_bar().encode(
-        alt.X("logusers:Q", bin=True),
-        y='count()',
+    ch = alt.Chart(idata, title=f"{scale} users").mark_bar().encode(
+        alt.X("bin:O", scale=alt.Scale(domain=labels), axis=alt.Axis(labelAngle=-45), title=f"{scale} Active Users"),
+        y=alt.Y('count()', title="Number of communities"),
         color="cluster",
         tooltip=["users", "hub"],
     ).interactive()
     chs.append(ch)
 display(alt.hconcat(*chs))
+```
+
+```{code-cell} ipython3
+
 ```
