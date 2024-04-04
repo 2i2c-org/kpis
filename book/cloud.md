@@ -38,8 +38,12 @@ This data is pulled from these two sources:
 ```
 
 ```{code-cell} ipython3
-:tags: [remove-cell]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
 import pandas as pd
 from pathlib import Path
 import altair as alt
@@ -47,11 +51,17 @@ from textwrap import dedent
 from IPython.display import Markdown, display
 ```
 
++++ {"editable": true, "slideshow": {"slide_type": ""}}
+
 ## Load and munge data
 
 ```{code-cell} ipython3
-:tags: [remove-cell]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
 # Load the data
 df = pd.read_csv("data/hub-activity.csv", index_col=0)
 
@@ -62,12 +72,17 @@ df = df.loc[df["hub"].map(lambda a: "staging" not in a)]
 df = df.replace({"basehub": "Basic", "daskhub": "Dask Gateway"})
 ```
 
++++ {"editable": true, "slideshow": {"slide_type": ""}}
+
 ## Number of hubs
 
 `````{code-cell} ipython3
 ---
+editable: true
 mystnb:
   markdown_format: myst
+slideshow:
+  slide_type: ''
 tags: [remove-input]
 ---
 # Basic stats about our number of hubs and clusters
@@ -88,28 +103,42 @@ Markdown(f"""
 """)
 `````
 
++++ {"editable": true, "slideshow": {"slide_type": ""}}
+
 ### Number of hubs per cluster
 
 _excluding staging hubs_
 
 ```{code-cell} ipython3
-:tags: [remove-input]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input]
+---
 table_nhubs = df.groupby("cluster").agg({"hub": "nunique"}).sort_values("hub", ascending=False)
 table_nhubs.columns = ["Number of hubs"]
 table_nhubs.T
 ```
 
++++ {"editable": true, "slideshow": {"slide_type": ""}}
+
 ### Types of hubs
 
 ```{code-cell} ipython3
-:tags: [remove-input]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input]
+---
 hub_types = df.query("scale == 'Weekly'").groupby("chart").agg({"hub": "count", "users": "sum"})
 hub_types = hub_types.rename(columns={"hub": "Number of hubs", "users": "Weekly users"})
 hub_types.index.name = "Chart type"
 hub_types
 ```
+
++++ {"editable": true, "slideshow": {"slide_type": ""}}
 
 ## Active users
 
@@ -119,8 +148,11 @@ Total active users across all of our hubs and communities.
 
 `````{code-cell} ipython3
 ---
+editable: true
 mystnb:
   markdown_format: myst
+slideshow:
+  slide_type: ''
 tags: [remove-input]
 ---
 grid = """
@@ -141,12 +173,14 @@ for scale in scale_ordering:
 Markdown(grid % "\n".join(interior))
 `````
 
++++ {"editable": true, "slideshow": {"slide_type": ""}}
+
 ### Active users by hub
 
 Active users broken down by each hub that we run.
 We break our hubs into two groups as some hubs have orders of magnitude more users than others.
 
-+++
++++ {"editable": true, "slideshow": {"slide_type": ""}}
 
 #### Count hubs by community size
 
@@ -155,28 +189,17 @@ We break our hubs into two groups as some hubs have orders of magnitude more use
 editable: true
 slideshow:
   slide_type: ''
-tags: [remove-input, remove-stderr, remove-stdout]
+tags: [remove-cell]
 ---
-chs = []
-groups = df.groupby("scale")
-for scale in scale_ordering:
-    idata = groups.get_group(scale).copy()
-
-    # Calculate bins 
-    bins = [0, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
-    labels = [f"{bins[ii]}-{bins[ii+1]}" for ii in range(len(bins)-1)]
-    idata["bin"] = pd.cut(idata["users"], bins, labels=labels, right=False)
-    binned_data = idata.groupby('bin').size().reset_index(name='count')
-    # ref for log plot: https://github.com/altair-viz/altair/issues/1074#issuecomment-411861659
-    ch = alt.Chart(idata, title=f"{scale} users").mark_bar().encode(
-        alt.X("bin:O", scale=alt.Scale(domain=labels), axis=alt.Axis(labelAngle=-45), title=f"{scale} Active Users"),
-        y=alt.Y('count()', title="Number of communities"),
-        color="cluster",
-        tooltip=["users", "hub"],
-    ).interactive()
-    chs.append(ch)
-display(alt.hconcat(*chs))
+# Calculate bins and add it to data for plotting 
+bins = [0, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
+labels = [f"{bins[ii]}-{bins[ii+1]}" for ii in range(len(bins)-1)]
+df["bin"] = pd.cut(df["users"], bins, labels=labels, right=False)
+max_y_bins = df.groupby(["scale", "bin"]).count()["users"].max() + 10
+max_y_users = df.groupby(["scale", "bin"]).sum()["users"].max() + 100
 ```
+
++++ {"editable": true, "slideshow": {"slide_type": ""}}
 
 #### Total number of users binned by community size
 
@@ -189,38 +212,53 @@ slideshow:
   slide_type: ''
 tags: [remove-input, remove-stderr, remove-stdout]
 ---
-chs = []
+chs_bins = []
+chs_users = []
 chs_perc = []
 groups = df.groupby("scale")
 for scale in scale_ordering:
-    # Calculate bins 
     idata = groups.get_group(scale).copy()
-    bins = [0, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
-    labels = [f"{bins[ii]}-{bins[ii+1]}" for ii in range(len(bins)-1)]
-    idata["bin"] = pd.cut(idata["users"], bins, labels=labels, right=False)
-    
-    # Number of communities in each bin chart
     binned_data = idata.groupby('bin').size().reset_index(name='count')
-    # ref for log plot: https://github.com/altair-viz/altair/issues/1074#issuecomment-411861659
-    ch = alt.Chart(idata, title=f"{scale} users").mark_bar().encode(
+
+    # Number 
+    ch = alt.Chart(idata, title=f"{scale}").mark_bar().encode(
         alt.X("bin:O", scale=alt.Scale(domain=labels), axis=alt.Axis(labelAngle=-45), title=f"{scale} Active Users"),
-        y=alt.Y('users', title="Number of users"),
+        y=alt.Y('count()', title="Number of communities", scale=alt.Scale(domain=[0, max_y_bins])),
         color="cluster",
         tooltip=["users", "hub"],
     ).interactive()
-    chs.append(ch)
+    chs_bins.append(ch)
+
+    # CHART: Number of total users grouped by community size
+    ch = alt.Chart(idata, title=f"{scale}").mark_bar().encode(
+        alt.X("bin:O", scale=alt.Scale(domain=labels), axis=alt.Axis(labelAngle=-45), title=f"{scale} Active Users"),
+        y=alt.Y('users', title="Number of users", scale=alt.Scale(domain=[0, max_y_users])),
+        color="cluster",
+        tooltip=["users", "hub"],
+    ).interactive()
+    chs_users.append(ch)
 
     # Percentage breakdown chart
     bin_sums = idata.groupby("bin").sum()["users"]
     bin_sums = bin_sums / bin_sums.sum()
-    ch_perc = alt.Chart(bin_sums.reset_index(), title="% Monthly Active Users by community size").mark_bar().encode(
+    ch = alt.Chart(bin_sums.reset_index(), title=f"{scale}").mark_bar().encode(
         x = "bin",
-        y = alt.Y("users", axis=alt.Axis(format='%')),
+        y = alt.Y("users", axis=alt.Axis(format='%'), scale=alt.Scale(domain=[0, 1])),
         tooltip=["bin", alt.Tooltip("users", format='.0%')],
     ).interactive()
-    chs_perc.append(ch_perc)
+    chs_perc.append(ch)
 
 # Display the charts
-display(alt.hconcat(*chs))
-display(alt.hconcat(*chs_perc))
+display(alt.hconcat(*chs_bins, title=f"Number of communities in bins of active users"))
+display(alt.hconcat(*chs_users, title=f"Total Active Users by community size"))
+display(alt.hconcat(*chs_perc, title=f"% {scale} Total Active Users by community size"))
+```
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+---
+
 ```
