@@ -276,6 +276,9 @@ import pandas as pd
 ```
 
 ```{code-cell} ipython3
+---
+tags: [remove-cell]
+---
 # Load the latest AirTable data
 communities = pd.read_csv("./data/airtable-communities.csv")
 
@@ -329,7 +332,7 @@ communities = pd.merge(located, communities, "outer", "Location")
 editable: true
 slideshow:
   slide_type: ''
-tags: [remove-input]
+tags: [remove-input, full-width]
 ---
 # World map
 world_source = alt.topo_feature(data.world_110m.url, 'countries')
