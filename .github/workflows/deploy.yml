@@ -43,6 +43,11 @@ jobs:
       # Install dependencies
       - run: pip install -r requirements.txt
 
+      # Download the latest AirTable community data
+      - run: python book/scripts/download_airtable_data.py
+        env:
+          AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
+
       # Download the latest hub activity data
       - run: python book/scripts/download_hub_activity.py
 
@@ -55,7 +60,7 @@ jobs:
       # Build the site
       - run: sphinx-build -b dirhtml book book/_build/dirhtml
         env:
-          AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
+          AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }} 
 
       # Upload to GH Pages
       - name: Upload artifact
