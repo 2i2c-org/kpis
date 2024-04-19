@@ -1,16 +1,23 @@
 # To run the code
 altair
-myst-nb
-pyairtable
-pandas
+geopandas
+geopy
 ghapi
 github-activity
-git+https://github.com/2i2c-org/sphinx-2i2c-theme
+ipywidgets
 linkify-it-py
+matplotlib
+myst-nb
+pandas
+pyairtable
+pyarrow
 rich
+shapely
+git+https://github.com/2i2c-org/sphinx-2i2c-theme
 sphinx-design
 sphinx-togglebutton
 tomlkit
+vega_datasets
 
 # For developing
 itables

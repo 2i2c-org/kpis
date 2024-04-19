@@ -254,11 +254,131 @@ display(alt.hconcat(*chs_users, title=f"Total Active Users by community size"))
 display(alt.hconcat(*chs_perc, title=f"% {scale} Total Active Users by community size"))
 ```
 
++++ {"editable": true, "slideshow": {"slide_type": ""}}
+
+## Map of hubs
+
+Below is a visualization that represents the hubs
+
 ```{code-cell} ipython3
 ---
 editable: true
 slideshow:
   slide_type: ''
+tags: [remove-cell]
 ---
+import geopandas as gpd
+import pandas as pd
+from geopandas.tools import geocode
+import altair as alt
+from vega_datasets import data
+import pandas as pd
+```
 
+```{code-cell} ipython3
+# Load the latest AirTable data
+communities = pd.read_csv("./data/airtable-communities.csv")
+
+# Drop communities that have a location and at least one hub
+communities = communities.dropna(subset=["Location", "Hubs"])
+
+# Clean up a bit
+communities = communities.rename(columns={"domain (from Hubs)": "domain"})
+communities["domain"] = communities["domain"].map(lambda a: eval(a))
+
+# Load hub stats data, we'll only use Monthly numbers
+hub_stats = df.query("scale == 'Monthly'").drop(columns=["scale"])
+
+# Loop through communities and add the monthly users of any hubs linked
+# also add the cluster
+# TODO: This is an imperfect lookup and some communities end up with
+#       0 users, so we should fix this mismatch.
+communities["users"] = 0
+for ix, row in communities.iterrows():
+    for domain in row["domain"]:
+        if domain in hub_stats["hub"].values:
+            this_hub = hub_stats.query("hub == @domain").squeeze()
+            communities.loc[ix, "users"] += this_hub["users"]
+            communities.loc[ix, "cluster"] = this_hub["cluster"]
+```
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
+# Geocode each city so we can plot it on a map
+unique_locations = communities["Location"].unique()
+located = geocode(unique_locations)
+
+# This lets us join on this column
+located["Location"] = unique_locations
+
+# Add numeric lattitude and longitude
+for ix, row in located.iterrows():
+    located.loc[ix, "lat"], located.loc[ix, "lon"] = row["geometry"].coords.xy
+
+# Merge location information with our communities based on city name
+communities = pd.merge(located, communities, "outer", "Location")
+```
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input]
+---
+# World map
+world_source = alt.topo_feature(data.world_110m.url, 'countries')
+world = alt.Chart(world_source, width=1000, height=500,
+                  title=f"{communities.shape[0]} active community hubs, Worldwide").mark_geoshape(
+    fill='#F7F7F7',
+    stroke='gray'
+).project(
+    type="equalEarth"
+)
+
+# USA map
+usa_source = alt.topo_feature(data.us_10m.url, 'states')
+usa = alt.Chart(usa_source, width=1000, height=500, title="Active community hubs, USA").mark_geoshape(
+    fill='#F7F7F7',
+    stroke='gray'
+).project(
+    type="albersUsa"
+)
+
+# Plotting the data
+points = alt.Chart(communities).mark_circle().encode(
+    longitude='lat:Q',
+    latitude='lon:Q',
+    color="Constellation",
+    size=alt.Size("scaled_users:Q", legend=None),
+    tooltip=["Community", "Location", alt.Tooltip("users", title="Monthly Users"), "Constellation"]
+).transform_calculate(
+    scaled_users='log(datum.users, 10)'
+)
+
+(world + points) & (usa + points)
+```
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
+# This is just to visualize the located cities to check
+# NOT included in final output
+located_cities = alt.Chart(located).mark_circle(
+    size=200,
+).encode(
+    longitude='lat:Q',
+    latitude='lon:Q',
+    tooltip=["Location", "address"]
+)
+(world + located_cities) & (usa + located_cities)
 ```
