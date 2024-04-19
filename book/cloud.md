@@ -354,7 +354,7 @@ usa = alt.Chart(usa_source, width=1000, height=500, title="Active community hubs
 points = alt.Chart(communities).mark_circle().encode(
     longitude='lat:Q',
     latitude='lon:Q',
-    color="Constellation",
+    color=alt.Color("Constellation", scale=alt.Scale(scheme="dark2")),
     size=alt.Size("scaled_users:Q", legend=None),
     tooltip=["Community", "Location", alt.Tooltip("users", title="Monthly Users"), "Constellation"]
 ).transform_calculate(
