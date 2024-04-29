@@ -136,6 +136,7 @@ book/data/github-activity.csv
 book/data/hub-activity.csv
 book/data/key-communities.toml
 book/data/airtable-communities.csv
+book/data/city-locations.csv
 
 # A place to manually store data we use as part of data updating
 book/scripts/_data/

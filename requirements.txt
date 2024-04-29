@@ -9,6 +9,7 @@ linkify-it-py
 matplotlib
 myst-nb
 pandas
+plotly_express
 pyairtable
 pyarrow
 rich
