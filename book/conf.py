@@ -29,3 +29,6 @@ intersphinx_mapping = {
 # Ensure key communities is downloaded
 from subprocess import run
 run(["python", "download_key_communities.py"], cwd="scripts", check=True)
+
+def setup(app):
+  app.add_js_file("https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js")
