@@ -267,16 +267,18 @@ slideshow:
   slide_type: ''
 tags: [remove-cell]
 ---
-import geopandas as gpd
 import pandas as pd
 from geopandas.tools import geocode
-import altair as alt
-from vega_datasets import data
 import pandas as pd
+import plotly.express as px
+import numpy as np
 ```
 
 ```{code-cell} ipython3
 ---
+editable: true
+slideshow:
+  slide_type: ''
 tags: [remove-cell]
 ---
 # Load the latest AirTable data
@@ -313,15 +315,22 @@ slideshow:
 tags: [remove-cell]
 ---
 # Geocode each city so we can plot it on a map
-unique_locations = communities["Location"].unique()
-located = geocode(unique_locations)
+path_locations = Path("./data/city-locations.csv")
+if not path_locations.exists():
+    unique_locations = communities["Location"].unique()
+    located = geocode(unique_locations)
 
-# This lets us join on this column
-located["Location"] = unique_locations
+    # This lets us join on this column
+    located["Location"] = unique_locations
+    
+    # Add numeric lattitude and longitude
+    for ix, row in located.iterrows():
+        located.loc[ix, "lon"], located.loc[ix, "lat"] = row["geometry"].coords.xy
 
-# Add numeric lattitude and longitude
-for ix, row in located.iterrows():
-    located.loc[ix, "lat"], located.loc[ix, "lon"] = row["geometry"].coords.xy
+    # Save for future use
+    located.to_csv(path_locations, index=False)
+else:
+    located = pd.read_csv(path_locations, index_col=False)
 
 # Merge location information with our communities based on city name
 communities = pd.merge(located, communities, "outer", "Location")
@@ -332,56 +341,38 @@ communities = pd.merge(located, communities, "outer", "Location")
 editable: true
 slideshow:
   slide_type: ''
-tags: [remove-input, full-width]
+tags: [remove-cell]
 ---
-# World map
-world_source = alt.topo_feature(data.world_110m.url, 'countries')
-world = alt.Chart(world_source, width=1000, height=500,
-                  title=f"{communities.shape[0]} active community hubs, Worldwide").mark_geoshape(
-    fill='#F7F7F7',
-    stroke='gray'
-).project(
-    type="equalEarth"
-)
+# Add a log-scaled column to ease plotting
+communities["users_scaled"] = np.log10(communities["users"])
 
-# USA map
-usa_source = alt.topo_feature(data.us_10m.url, 'states')
-usa = alt.Chart(usa_source, width=1000, height=500, title="Active community hubs, USA").mark_geoshape(
-    fill='#F7F7F7',
-    stroke='gray'
-).project(
-    type="albersUsa"
-)
+# Drop communities that have 0 users
+communities = communities[communities["users_scaled"] != -np.inf]
 
-# Plotting the data
-points = alt.Chart(communities).mark_circle().encode(
-    longitude='lat:Q',
-    latitude='lon:Q',
-    color=alt.Color("Constellation", scale=alt.Scale(scheme="dark2")),
-    size=alt.Size("scaled_users:Q", legend=None),
-    tooltip=["Community", "Location", alt.Tooltip("users", title="Monthly Users"), "Constellation"]
-).transform_calculate(
-    scaled_users='log(datum.users, 10)'
-)
-
-(world + points) & (usa + points)
+# Add XY jitter so that overlapping hubs don't totally block each other
+communities['lat_jitter'] = communities['lat'].map(lambda a: a + np.random.normal(0, 0.2))
+communities['lon_jitter'] = communities['lon'].map(lambda a: a + np.random.normal(0, 0.2))
 ```
 
 ```{code-cell} ipython3
 ---
 editable: true
+raw_mimetype: ''
 slideshow:
   slide_type: ''
-tags: [remove-cell]
+tags: [remove-input]
 ---
-# This is just to visualize the located cities to check
-# NOT included in final output
-located_cities = alt.Chart(located).mark_circle(
-    size=200,
-).encode(
-    longitude='lat:Q',
-    latitude='lon:Q',
-    tooltip=["Location", "address"]
+plotly_config = dict(
+    lat="lat_jitter", lon="lon_jitter",
+    hover_name="Community", hover_data={"users": True, "lat_jitter": False, "lon_jitter": False, "users_scaled": False, "Location": True},
+    size="users_scaled", # size of markers, "pop" is one of the columns of gapminder
+    color="Constellation",
+    width=900, height=500,
 )
-(world + located_cities) & (usa + located_cities)
+fig = px.scatter_geo(communities, projection="natural earth", **plotly_config)
+fig.show()
+
+
+fig2 = px.scatter_geo(communities, projection="albers usa", **plotly_config)
+fig2.show()
 ```
