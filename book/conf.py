@@ -29,3 +29,8 @@ intersphinx_mapping = {
 # Ensure key communities is downloaded
 from subprocess import run
 run(["python", "download_key_communities.py"], cwd="scripts", check=True)
+
+def setup(app):
+  # Load the requre module so that plotly works properly
+  # ref: https://jupyterbook.org/en/stable/interactive/interactive.html#plotly
+  app.add_js_file("https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js")

@@ -360,7 +360,7 @@ editable: true
 raw_mimetype: ''
 slideshow:
   slide_type: ''
-tags: [remove-input]
+tags: [remove-input, full-width]
 ---
 plotly_config = dict(
     lat="lat_jitter", lon="lon_jitter",
