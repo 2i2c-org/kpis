@@ -5,6 +5,7 @@ geopy
 ghapi
 github-activity
 ipywidgets
+kaleido  # for image export with plotly
 linkify-it-py
 matplotlib
 myst-nb

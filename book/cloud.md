@@ -376,3 +376,33 @@ fig.show()
 fig2 = px.scatter_geo(communities, projection="albers usa", **plotly_config)
 fig2.show()
 ```
+
++++ {"editable": true, "slideshow": {"slide_type": ""}}
+
+Below is a dropdown with a few PNGs of different hub constellations for re-use.
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input, hide-output]
+---
+# This cell is for generating PNG images that can be re-used elsewhere.
+# It will hide all the images under a dropdown so that it doesn't clutter the screen.
+plotly_config = dict(
+    lat="lat_jitter", lon="lon_jitter",
+    hover_name="Community", hover_data={"users": True, "lat_jitter": False, "lon_jitter": False, "users_scaled": False, "Location": True},
+    size="users_scaled", # size of markers, "pop" is one of the columns of gapminder
+    width=1500, height=800,
+)
+fig = px.scatter_geo(communities, projection="natural earth", color_discrete_sequence=["#e14e4f"], **plotly_config)
+display(Markdown(f"**All 2i2c hubs**"))
+fig.show("png")
+
+for constellation, idata in communities.groupby("Constellation"):
+    fig = px.scatter_geo(idata, projection="natural earth", color_discrete_sequence=["#e14e4f"],
+                         title="", **plotly_config)
+    display(Markdown(f"Constellation: **{constellation}**"))
+    fig.show("png")
+```

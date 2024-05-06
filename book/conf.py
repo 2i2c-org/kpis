@@ -1,7 +1,7 @@
 title = "2i2c KPIs"
 extensions = ["myst_nb", "sphinx_design", "sphinx_togglebutton", "sphinx.ext.intersphinx"]
 
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "**.ipynb_checkpoints", "data/**"]
+exclude_patterns = ["_build", "_build/data", "scripts/_build", "Thumbs.db", ".DS_Store", "**.ipynb_checkpoints", "data/**"]
 only_build_toc_files = True
 
 myst_enable_extensions = [
