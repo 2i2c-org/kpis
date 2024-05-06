@@ -13,6 +13,7 @@ nb_render_markdown_format = "myst"
 
 html_title = "2i2c KPIs"
 html_theme = "sphinx_2i2c_theme"
+html_static_path = ["_static"]
 
 html_theme_options = {
    "navbar_align": "left",

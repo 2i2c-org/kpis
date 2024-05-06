@@ -390,6 +390,7 @@ tags: [remove-input, hide-output]
 ---
 # This cell is for generating PNG images that can be re-used elsewhere.
 # It will hide all the images under a dropdown so that it doesn't clutter the screen.
+from pathlib import Path
 plotly_config = dict(
     lat="lat_jitter", lon="lon_jitter",
     hover_name="Community", hover_data={"users": True, "lat_jitter": False, "lon_jitter": False, "users_scaled": False, "Location": True},
@@ -397,12 +398,18 @@ plotly_config = dict(
     width=1500, height=800,
 )
 fig = px.scatter_geo(communities, projection="natural earth", color_discrete_sequence=["#e14e4f"], **plotly_config)
+path_file = f"_static/maps/2i2c_hubs_map.png"
 display(Markdown(f"**All 2i2c hubs**"))
+display(Markdown(f"Permanent link: https://2i2c.org/kpis/{path_file}"))
 fig.show("png")
+fig.write_image(path_file)
 
 for constellation, idata in communities.groupby("Constellation"):
     fig = px.scatter_geo(idata, projection="natural earth", color_discrete_sequence=["#e14e4f"],
                          title="", **plotly_config)
+    path_file = f"_static/maps/{constellation}_map.png"
     display(Markdown(f"Constellation: **{constellation}**"))
+    display(Markdown(f"Permanent link: https://2i2c.org/kpis/{path_file}"))
     fig.show("png")
+    fig.write_image(path_file)
 ```
