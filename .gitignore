@@ -141,3 +141,4 @@ book/data/city-locations.csv
 # A place to manually store data we use as part of data updating
 book/scripts/_data/
 _build
+book/_static/

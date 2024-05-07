@@ -272,6 +272,7 @@ from geopandas.tools import geocode
 import pandas as pd
 import plotly.express as px
 import numpy as np
+from plotly.express.colors import qualitative
 ```
 
 ```{code-cell} ipython3
@@ -368,6 +369,7 @@ plotly_config = dict(
     size="users_scaled", # size of markers, "pop" is one of the columns of gapminder
     color="Constellation",
     width=900, height=500,
+    color_discrete_sequence=qualitative.D3
 )
 fig = px.scatter_geo(communities, projection="natural earth", **plotly_config)
 fig.show()
