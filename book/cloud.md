@@ -402,7 +402,7 @@ plotly_config = dict(
 fig = px.scatter_geo(communities, projection="natural earth", color_discrete_sequence=["#e14e4f"], **plotly_config)
 path_file = f"_static/maps/2i2c_hubs_map.png"
 display(Markdown(f"**All 2i2c hubs**"))
-display(Markdown(f"Permanent link: https://2i2c.org/kpis/{path_file}"))
+display(Markdown(f"Permanent link: {{download}}`2i2c.org/kpis{path_file} <{path_file}>`"))
 fig.show("png")
 fig.write_image(path_file)
 
@@ -411,7 +411,7 @@ for constellation, idata in communities.groupby("Constellation"):
                          title="", **plotly_config)
     path_file = f"_static/maps/{constellation}_map.png"
     display(Markdown(f"Constellation: **{constellation}**"))
-    display(Markdown(f"Permanent link: https://2i2c.org/kpis/{path_file}"))
+    display(Markdown(f"Permanent link: {{download}}`2i2c.org/kpis{path_file} <{path_file}>`"))
     fig.show("png")
     fig.write_image(path_file)
 ```
