@@ -400,11 +400,18 @@ plotly_config = dict(
     width=1500, height=800,
 )
 fig = px.scatter_geo(communities, projection="natural earth", color_discrete_sequence=["#e14e4f"], **plotly_config)
-path_file = f"_static/maps/2i2c_hubs_map.png"
+
+# Save our maps to the _static folder
+path_maps = Path("_static/maps/")
+path_maps.mkdir(parents=True, exist_ok=True)
+path_file = path_maps / f"2i2c_hubs_map.png"
+fig.write_image(path_file)
+
+# Output for the cell
 display(Markdown(f"**All 2i2c hubs**"))
 display(Markdown(f"Permanent link: {{download}}`2i2c.org/kpis{path_file} <{path_file}>`"))
 fig.show("png")
-fig.write_image(path_file)
+
 
 for constellation, idata in communities.groupby("Constellation"):
     fig = px.scatter_geo(idata, projection="natural earth", color_discrete_sequence=["#e14e4f"],
