@@ -48,19 +48,16 @@ jobs:
         env:
           AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
 
-      # Download the latest hub activity data
-      - run: python book/scripts/download_hub_activity.py
-
-      # Download the latest GitHub data
-      - run: python book/scripts/download_github_data.py
-        env:
-          TOKEN_GITHUB_READONLY: ${{ secrets.TOKEN_GITHUB_API_READONLY }}
-      
       # Download hub activity data from Grafana
       - name: Load hub activity from grafana
         env:
           GRAFANA_TOKEN: ${{ secrets.GRAFANA_TOKEN }}
         run: python book/scripts/download_grafana_activity.py
+
+      # Download the latest GitHub data
+      - run: python book/scripts/download_github_data.py
+        env:
+          TOKEN_GITHUB_READONLY: ${{ secrets.TOKEN_GITHUB_API_READONLY }}
 
       # Build the site
       - run: sphinx-build -b dirhtml book book/_build/dirhtml
