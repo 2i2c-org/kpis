@@ -45,7 +45,9 @@ slideshow:
 tags: [remove-cell]
 ---
 import pandas as pd
+import numpy as np
 from pathlib import Path
+import plotly.express as px
 import altair as alt
 from textwrap import dedent
 from IPython.display import Markdown, display
@@ -63,18 +65,29 @@ slideshow:
 tags: [remove-cell]
 ---
 # Load the data
-df = pd.read_csv("data/hub-activity.csv", index_col=0)
+df = pd.read_csv("data/hub-activity.csv")
 
-# Remove the staging hubs since they are generally redundant
-df = df.loc[df["hub"].map(lambda a: "staging" not in a)]
+# Remove staging hubs since those aren't relevant to stats
+df = df[~df.hub.str.contains("staging")]
 
-# Categorize hub type
-df = df.replace({"basehub": "Basic", "daskhub": "Dask Gateway"})
+df["clusterhub"] = df.apply(lambda a: f"{a['cluster']}/{a['hub']}", axis=1)
 ```
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}}
 
 ## Number of hubs
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
+# A few summary statistics of hubs
+n_hubs = df["clusterhub"].nunique()
+n_clusters = df["cluster"].nunique()
+```
 
 `````{code-cell} ipython3
 ---
@@ -85,10 +98,6 @@ slideshow:
   slide_type: ''
 tags: [remove-input]
 ---
-# Basic stats about our number of hubs and clusters
-n_clusters = df["cluster"].nunique()
-n_hubs = df["hub"].nunique()
-
 Markdown(f"""
 ````{{grid}}
 :class-container: big-number
@@ -103,48 +112,29 @@ Markdown(f"""
 """)
 `````
 
-+++ {"editable": true, "slideshow": {"slide_type": ""}}
-
-### Number of hubs per cluster
-
-_excluding staging hubs_
-
 ```{code-cell} ipython3
 ---
 editable: true
 slideshow:
   slide_type: ''
-tags: [remove-input]
+tags: [remove-cell]
 ---
-table_nhubs = df.groupby("cluster").agg({"hub": "nunique"}).sort_values("hub", ascending=False)
-table_nhubs.columns = ["Number of hubs"]
-table_nhubs.T
-```
+# Sum by cluster so we avoid having too many categories
+df_clusters = df.groupby(["cluster", "date", "timescale"]).sum("users").reset_index()
 
-+++ {"editable": true, "slideshow": {"slide_type": ""}}
+# Add logusers
+df_clusters = df_clusters.query("users > 0")
+df_clusters["logusers"] = df_clusters["users"].map(np.log10)
 
-### Types of hubs
-
-```{code-cell} ipython3
----
-editable: true
-slideshow:
-  slide_type: ''
-tags: [remove-input]
----
-hub_types = df.query("scale == 'Weekly'").groupby("chart").agg({"hub": "count", "users": "sum"})
-hub_types = hub_types.rename(columns={"hub": "Number of hubs", "users": "Weekly users"})
-hub_types.index.name = "Chart type"
-hub_types
+# List of clusters sorted by size
+sorted_clusters = df_clusters.groupby("cluster").mean("users").sort_values("users", ascending=False).index.values
 ```
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}}
 
 ## Active users
 
-### Total active users
-
-Total active users across all of our hubs and communities.
+Average active users over the past 6 months.
 
 `````{code-cell} ipython3
 ---
@@ -161,17 +151,43 @@ grid = """
 %s
 ````
 """
-scale_ordering = ["Monthly", "Weekly", "Daily"]
+scale_ordering = ["daily", "monthly"]
 interior = []
 for scale in scale_ordering:
-    users = df.query("scale==@scale")["users"].sum()
+    users = df_clusters.query("timescale == @scale").groupby("cluster").mean("users")["users"].sum()
     interior.append(dedent("""\
     ```{grid-item-card} %s
     %s
     ```\
-    """ % (scale, users)))
+    """ % (f"{scale.capitalize()} users", int(users))))
 Markdown(grid % "\n".join(interior))
 `````
+
++++ {"editable": true, "slideshow": {"slide_type": ""}}
+
+Monthly active users over the past 6 months
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input]
+---
+for scale in ["monthly", "daily"]:
+    for kind in ["users", "logusers"]:
+        bar = px.area(
+            df_clusters.query("timescale == @scale"),
+            x="date",
+            y=kind,
+            color="cluster",
+            category_orders={"cluster": sorted_clusters},
+            line_group="cluster",
+            title=f"{scale.capitalize()} {kind} across all 2i2c clusters",
+            height=500
+        )
+        bar.show()
+```
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}}
 
@@ -191,12 +207,16 @@ slideshow:
   slide_type: ''
 tags: [remove-cell]
 ---
+# Mean users for each hub
+df_sums = df.groupby(["clusterhub", "timescale"]).mean("users")
+
 # Calculate bins and add it to data for plotting 
 bins = [0, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
 labels = [f"{bins[ii]}-{bins[ii+1]}" for ii in range(len(bins)-1)]
-df["bin"] = pd.cut(df["users"], bins, labels=labels, right=False)
-max_y_bins = df.groupby(["scale", "bin"]).count()["users"].max() + 10
-max_y_users = df.groupby(["scale", "bin"]).sum()["users"].max() + 100
+df_sums["bin"] = pd.cut(df_sums["users"], bins, labels=labels, right=False)
+df_sums = df_sums.reset_index()
+max_y_bins = df_sums.groupby(["timescale", "bin"]).count()["users"].max() + 10
+max_y_users = df_sums.groupby(["timescale", "bin"]).sum()["users"].max() + 100
 ```
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}}
@@ -215,7 +235,7 @@ tags: [remove-input, remove-stderr, remove-stdout]
 chs_bins = []
 chs_users = []
 chs_perc = []
-groups = df.groupby("scale")
+groups = df_sums.groupby("timescale")
 for scale in scale_ordering:
     idata = groups.get_group(scale).copy()
     binned_data = idata.groupby('bin').size().reset_index(name='count')
@@ -224,19 +244,10 @@ for scale in scale_ordering:
     ch = alt.Chart(idata, title=f"{scale}").mark_bar().encode(
         alt.X("bin:O", scale=alt.Scale(domain=labels), axis=alt.Axis(labelAngle=-45), title=f"{scale} Active Users"),
         y=alt.Y('count()', title="Number of communities", scale=alt.Scale(domain=[0, max_y_bins])),
-        color="cluster",
-        tooltip=["users", "hub"],
+        color="clusterhub",
+        tooltip=["users", "clusterhub"],
     ).interactive()
     chs_bins.append(ch)
-
-    # CHART: Number of total users grouped by community size
-    ch = alt.Chart(idata, title=f"{scale}").mark_bar().encode(
-        alt.X("bin:O", scale=alt.Scale(domain=labels), axis=alt.Axis(labelAngle=-45), title=f"{scale} Active Users"),
-        y=alt.Y('users', title="Number of users", scale=alt.Scale(domain=[0, max_y_users])),
-        color="cluster",
-        tooltip=["users", "hub"],
-    ).interactive()
-    chs_users.append(ch)
 
     # Percentage breakdown chart
     bin_sums = idata.groupby("bin").sum()["users"]
@@ -292,20 +303,19 @@ communities = communities.dropna(subset=["Location", "Hubs"])
 communities = communities.rename(columns={"domain (from Hubs)": "domain"})
 communities["domain"] = communities["domain"].map(lambda a: eval(a))
 
-# Load hub stats data, we'll only use Monthly numbers
-hub_stats = df.query("scale == 'Monthly'").drop(columns=["scale"])
+# Calculate the number of users for each hub
+for ix, irow in communities.iterrows():
+    clusters = eval(irow["cluster"])
+    hubs = eval(irow["id"])
+    clusterhub = [f"{a}/{b}" for a, b in zip(clusters, hubs)]
 
-# Loop through communities and add the monthly users of any hubs linked
-# also add the cluster
-# TODO: This is an imperfect lookup and some communities end up with
-#       0 users, so we should fix this mismatch.
-communities["users"] = 0
-for ix, row in communities.iterrows():
-    for domain in row["domain"]:
-        if domain in hub_stats["hub"].values:
-            this_hub = hub_stats.query("hub == @domain").squeeze()
-            communities.loc[ix, "users"] += this_hub["users"]
-            communities.loc[ix, "cluster"] = this_hub["cluster"]
+    # Grab the average number of monthly users for this community across all clusters/hubs
+    hubs = df.query("clusterhub in @clusterhub and timescale == 'monthly'")
+    # Average across time for each hub, and then add across all hubs
+    hubs = df.query("clusterhub in @clusterhub and timescale == 'monthly'")
+    n_users = hubs.groupby("clusterhub").mean("users")["users"].sum().round()
+    communities.loc[ix, "users"] = n_users
+    
 ```
 
 ```{code-cell} ipython3

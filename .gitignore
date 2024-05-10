@@ -142,3 +142,6 @@ book/data/city-locations.csv
 book/scripts/_data/
 _build
 book/_static/
+
+# Storing sensitive secrets we embed in github actions
+.env
