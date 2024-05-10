@@ -22,9 +22,9 @@
 import os
 import re
 import requests
+from pathlib import Path
 from textwrap import dedent
 from dotenv import load_dotenv
-from datetime import datetime
 from dateparser import parse as dateparser_parse
 from prometheus_pandas.query import Prometheus
 import pandas as pd
@@ -33,7 +33,6 @@ from rich.progress import track
 
 load_dotenv(override=False)
 GRAFANA_TOKEN = os.environ["GRAFANA_TOKEN"]
-
 
 def get_prometheus_datasources(grafana_url: str, grafana_token: str) -> pd.DataFrame:
     """
@@ -112,8 +111,13 @@ queries = {"daily": dedent("""
             """)
 }
 
-from pathlib import Path
-path_activity = Path("../data/hub-activity.csv")
+# Define here based on whether we're interactive
+if "__file__" in globals():
+    here = Path(__file__).parent
+else:
+    here = Path(".")
+
+path_activity = Path(here / "../data/hub-activity.csv")
 if not path_activity.exists():
     print(f"No hub activity data found at {path_activity}, downloading...")
     activity = []
