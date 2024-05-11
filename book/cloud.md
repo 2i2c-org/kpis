@@ -46,6 +46,7 @@ tags: [remove-cell]
 ---
 import pandas as pd
 import numpy as np
+import datetime
 from pathlib import Path
 import plotly.express as px
 import altair as alt
@@ -56,6 +57,17 @@ from IPython.display import Markdown, display
 +++ {"editable": true, "slideshow": {"slide_type": ""}}
 
 ## Load and munge data
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
+today = pd.to_datetime("today")
+last_week = today - datetime.timedelta(days=7)
+```
 
 ```{code-cell} ipython3
 ---
@@ -84,9 +96,21 @@ slideshow:
   slide_type: ''
 tags: [remove-cell]
 ---
-# A few summary statistics of hubs
-n_hubs = df["clusterhub"].nunique()
-n_clusters = df["cluster"].nunique()
+# Number of hubs on each cluster over time
+unique_hubs = df.query("timescale == 'monthly'").groupby(["cluster", "date"]).nunique("clusterhub")["clusterhub"].to_frame("hubs").reset_index()
+unique_hubs["date"] = pd.to_datetime(unique_hubs["date"])
+```
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
+# The latest number of unique hubs and clusters
+n_hubs = int(np.ceil(unique_hubs.query("date > @last_week").groupby("cluster").mean("hubs")["hubs"].sum()))
+n_clusters = unique_hubs.query("date > @last_week")["cluster"].nunique()
 ```
 
 `````{code-cell} ipython3
@@ -117,6 +141,26 @@ Markdown(f"""
 editable: true
 slideshow:
   slide_type: ''
+tags: [full-width, remove-input]
+---
+
+# Sort the clusters by most to least hubs
+sorted_clusters = unique_hubs.groupby("cluster").max("hubs").sort_values("hubs", ascending=False).index.values
+
+px.area(unique_hubs, x="date", y="hubs", color="cluster", title="Number of active hubs by cluster", category_orders={"cluster": sorted_clusters})
+```
+
++++ {"editable": true, "slideshow": {"slide_type": ""}}
+
+## Active users
+
+Average active users over the past 6 months.
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
 tags: [remove-cell]
 ---
 # Sum by cluster so we avoid having too many categories
@@ -129,12 +173,6 @@ df_clusters["logusers"] = df_clusters["users"].map(np.log10)
 # List of clusters sorted by size
 sorted_clusters = df_clusters.groupby("cluster").mean("users").sort_values("users", ascending=False).index.values
 ```
-
-+++ {"editable": true, "slideshow": {"slide_type": ""}}
-
-## Active users
-
-Average active users over the past 6 months.
 
 `````{code-cell} ipython3
 ---
@@ -172,7 +210,7 @@ Monthly active users over the past 6 months
 editable: true
 slideshow:
   slide_type: ''
-tags: [remove-input]
+tags: [remove-input, full-width]
 ---
 for scale in ["monthly", "daily"]:
     for kind in ["users", "logusers"]:

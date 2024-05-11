@@ -1,11 +1,12 @@
 """
 Download key communities CSV file if it isn't there
 """
+
 from pathlib import Path
 import urllib.request
 
 # URL of the file to download
-file_url = 'https://compass.2i2c.org/_downloads/8fa10f7f661246ec4fbe1515e254aa6d/key-communities.toml'
+file_url = "https://compass.2i2c.org/_downloads/8fa10f7f661246ec4fbe1515e254aa6d/key-communities.toml"
 file_local = Path("../data/key-communities.toml")
 
 # Open the URL

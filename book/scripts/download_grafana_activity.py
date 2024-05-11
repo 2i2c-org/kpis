@@ -29,10 +29,12 @@ from dateparser import parse as dateparser_parse
 from prometheus_pandas.query import Prometheus
 import pandas as pd
 from rich.progress import track
+
 # -
 
 load_dotenv(override=False)
 GRAFANA_TOKEN = os.environ["GRAFANA_TOKEN"]
+
 
 def get_prometheus_datasources(grafana_url: str, grafana_token: str) -> pd.DataFrame:
     """
@@ -53,7 +55,7 @@ def get_prometheus_datasources(grafana_url: str, grafana_token: str) -> pd.DataF
             "Accept": "application/json",
             "Content-Type": "application/json",
             "Authorization": f"Bearer {grafana_token}",
-        }
+        },
     )
     # Convert to a DF so that we can manipulate more easily
     df = pd.DataFrame.from_dict(datasources.json())
@@ -70,10 +72,10 @@ def get_pandas_prometheus(grafana_url: str, grafana_token: str, prometheus_uid: 
     ----------
     grafana_url: str
         URL of Grafana for querying. Must end in a trailing slash.
-        
+
     grafana_token: str
         Service account token with appropriate rights to make this API call.
-    
+
     prometheus_uid: str
         uid of Prometheus datasource within grafana to query.
     """
@@ -87,7 +89,9 @@ def get_pandas_prometheus(grafana_url: str, grafana_token: str, prometheus_uid: 
 
 # +
 # Fetch all available data sources for our Grafana
-datasources = get_prometheus_datasources("https://grafana.pilot.2i2c.cloud", GRAFANA_TOKEN)
+datasources = get_prometheus_datasources(
+    "https://grafana.pilot.2i2c.cloud", GRAFANA_TOKEN
+)
 
 # Filter out only the datasources associated with Prometheus.
 # These are the ones associated with cluster hub activity
@@ -99,16 +103,21 @@ datasources = datasources.query("type == 'prometheus'")
 # Save this to a CSV file and load from this file instead of downloading if it exists.
 
 # +
-queries = {"daily": dedent("""
+queries = {
+    "daily": dedent(
+        """
                     max(
                       jupyterhub_active_users{period="24h", namespace=~".*"}
                     ) by (namespace)
-            """),
-            "monthly": dedent("""
+            """
+    ),
+    "monthly": dedent(
+        """
                     max(
                       jupyterhub_active_users{period="30d", namespace=~".*"}
                     ) by (namespace)
-            """)
+            """
+    ),
 }
 
 # Define here based on whether we're interactive
@@ -121,10 +130,12 @@ path_activity = Path(here / "../data/hub-activity.csv")
 if not path_activity.exists():
     print(f"No hub activity data found at {path_activity}, downloading...")
     activity = []
-    for (queryname, query) in queries.items():
+    for queryname, query in queries.items():
         for uid, idata in track(list(datasources.groupby("uid"))):
             # Set up prometheus for this cluster and grab the activity
-            prometheus = get_pandas_prometheus("https://grafana.pilot.2i2c.cloud", GRAFANA_TOKEN, uid)
+            prometheus = get_pandas_prometheus(
+                "https://grafana.pilot.2i2c.cloud", GRAFANA_TOKEN, uid
+            )
             iactivity = prometheus.query_range(
                 query,
                 dateparser_parse("6 months ago"),
@@ -132,24 +143,26 @@ if not path_activity.exists():
                 "1d",
             )
             # Extract hub name from the brackets
-            iactivity.columns = [re.findall(r'[^"]+', col)[1] for col in iactivity.columns]
+            iactivity.columns = [
+                re.findall(r'[^"]+', col)[1] for col in iactivity.columns
+            ]
             iactivity.columns.name = "hub"
 
             # Clean up the timestamp into a date
             iactivity.index.name = "date"
             iactivity.index = iactivity.index.floor("D")
-            
+
             # Re-work so that we're tidy
             iactivity = iactivity.stack("hub").to_frame("users")
             iactivity = iactivity.reset_index()
-        
+
             # Add metadata so that we can track this later
             iactivity["cluster"] = idata["name"].squeeze()
             iactivity["timescale"] = queryname
 
             # Add to our list so that we concatenate across all clusters
             activity.append(iactivity)
-    
+
     # Convert into a DF and do a little munging
     activity = pd.concat(activity)
 
