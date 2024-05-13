@@ -130,38 +130,42 @@ path_activity = Path(here / "../data/hub-activity.csv")
 if not path_activity.exists():
     print(f"No hub activity data found at {path_activity}, downloading...")
     activity = []
+    errors = []
     for queryname, query in queries.items():
         for uid, idata in track(list(datasources.groupby("uid"))):
-            # Set up prometheus for this cluster and grab the activity
-            prometheus = get_pandas_prometheus(
-                "https://grafana.pilot.2i2c.cloud", GRAFANA_TOKEN, uid
-            )
-            iactivity = prometheus.query_range(
-                query,
-                dateparser_parse("6 months ago"),
-                dateparser_parse("now"),
-                "1d",
-            )
-            # Extract hub name from the brackets
-            iactivity.columns = [
-                re.findall(r'[^"]+', col)[1] for col in iactivity.columns
-            ]
-            iactivity.columns.name = "hub"
+            try:
+                # Set up prometheus for this cluster and grab the activity
+                prometheus = get_pandas_prometheus(
+                    "https://grafana.pilot.2i2c.cloud", GRAFANA_TOKEN, uid
+                )
+                iactivity = prometheus.query_range(
+                    query,
+                    dateparser_parse("12 months ago"),
+                    dateparser_parse("now"),
+                    "1d",
+                )
+                # Extract hub name from the brackets
+                iactivity.columns = [
+                    re.findall(r'[^"]+', col)[1] for col in iactivity.columns
+                ]
+                iactivity.columns.name = "hub"
 
-            # Clean up the timestamp into a date
-            iactivity.index.name = "date"
-            iactivity.index = iactivity.index.floor("D")
+                # Clean up the timestamp into a date
+                iactivity.index.name = "date"
+                iactivity.index = iactivity.index.floor("D")
 
-            # Re-work so that we're tidy
-            iactivity = iactivity.stack("hub").to_frame("users")
-            iactivity = iactivity.reset_index()
+                # Re-work so that we're tidy
+                iactivity = iactivity.stack("hub").to_frame("users")
+                iactivity = iactivity.reset_index()
 
-            # Add metadata so that we can track this later
-            iactivity["cluster"] = idata["name"].squeeze()
-            iactivity["timescale"] = queryname
+                # Add metadata so that we can track this later
+                iactivity["cluster"] = idata["name"].squeeze()
+                iactivity["timescale"] = queryname
 
-            # Add to our list so that we concatenate across all clusters
-            activity.append(iactivity)
+                # Add to our list so that we concatenate across all clusters
+                activity.append(iactivity)
+            except Exception:
+                errors.append(uid)
 
     # Convert into a DF and do a little munging
     activity = pd.concat(activity)
@@ -169,5 +173,6 @@ if not path_activity.exists():
     # Write to a CSV for future ref
     activity.to_csv(path_activity, index=False)
     print(f"Finished loading hub activity data to {path_activity}...")
+    print(f"The following clusters had errors: {', '.join(errors)}")
 else:
     print(f"Found data at {path_activity}, not downloading...")
