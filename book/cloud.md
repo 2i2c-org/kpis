@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.1
+    jupytext_version: 1.16.2
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -143,7 +143,6 @@ slideshow:
   slide_type: ''
 tags: [full-width, remove-input]
 ---
-
 # Sort the clusters by most to least hubs
 sorted_clusters = unique_hubs.groupby("cluster").max("hubs").sort_values("hubs", ascending=False).index.values
 

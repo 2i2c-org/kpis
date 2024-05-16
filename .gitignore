@@ -138,6 +138,13 @@ book/data/key-communities.toml
 book/data/airtable-communities.csv
 book/data/city-locations.csv
 
+# For monthly accounting data from CSS
+# We load this into AirTable and then pull it into our book script
+book/data/css-accounting.csv
+book/data/css-accounting-cleaned.csv
+book/data/airtable-accounting.csv
+book/data/airtable-accounting-cleaned.csv
+
 # A place to manually store data we use as part of data updating
 book/scripts/_data/
 _build

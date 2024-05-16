@@ -32,19 +32,22 @@ if not api_key:
     raise ValueError("Missing AIRTABLE_API_KEY")
 
 base_id = "appbjBTRIbgRiElkr"
-table_id = "tblYGygEo5PQBSUYt"
-view_name = "viw2F6xVWJujWKCuj"
 
+views = [
+    ("communities", "tblYGygEo5PQBSUYt", "viw2F6xVWJujWKCuj"),
+    ("accounting", "tblNjmVbPaVmC7wc3", "viw1daKSu2dTcd5lg")
+]
 ## Load in airtable
 api = Api(api_key)
-table = api.table(base_id, table_id)
-records = table.all(view=view_name)
-df = pd.DataFrame.from_records((r["fields"] for r in records))
-
-# %% [markdown]
-# Write to a CSV file (not checked into git)
-
-# %%
-out_file = Path(here / "../data/airtable-communities.csv")
-df.to_csv(out_file, index=False)
-print(f"Finished downloading latest AirTable community data to {out_file.resolve()}")
+for (name, table_id, view_id) in views:
+    table = api.table(base_id, table_id)
+    records = table.all(view=view_id)
+    df = pd.DataFrame.from_records((r["fields"] for r in records))
+    
+    # %% [markdown]
+    # Write to a CSV file (not checked into git)
+    
+    # %%
+    out_file = Path(here / f"../data/airtable-{name}.csv")
+    df.to_csv(out_file, index=False)
+print(f"Finished downloading latest AirTable community data to {out_file.resolve().parent}")
