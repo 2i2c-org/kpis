@@ -165,7 +165,7 @@ if not path_activity.exists():
                 # Add to our list so that we concatenate across all clusters
                 activity.append(iactivity)
             except Exception:
-                errors.append(uid)
+                errors.append((uid, idata["name"].squeeze()))
 
     # Convert into a DF and do a little munging
     activity = pd.concat(activity)
@@ -173,6 +173,8 @@ if not path_activity.exists():
     # Write to a CSV for future ref
     activity.to_csv(path_activity, index=False)
     print(f"Finished loading hub activity data to {path_activity}...")
-    print(f"The following clusters had errors: {', '.join(errors)}")
+    if errors:
+        serrors = "\n".join(f"- {error}" for error in errors)
+        print(f"The following clusters had errors: {serrors}")
 else:
     print(f"Found data at {path_activity}, not downloading...")

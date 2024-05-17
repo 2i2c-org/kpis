@@ -42,6 +42,7 @@ api = Api(api_key)
 for (name, table_id, view_id) in views:
     table = api.table(base_id, table_id)
     records = table.all(view=view_id)
+    print(f"Downloading AirTable data from https://airtable.com/{base_id}/{table_id}/{view_id}...")
     df = pd.DataFrame.from_records((r["fields"] for r in records))
     
     # %% [markdown]
