@@ -181,7 +181,7 @@ slideshow:
   slide_type: ''
 tags: [remove-input]
 ---
-communities_list = "\n".join(f"- [{community}](https:github.com/{community})" for community in communities)
+communities_list = "\n".join(f"- [{community}](https://github.com/{community})" for community in communities)
 Markdown(f"Key upstream communities:\n\n{communities_list}")
 ```
 
