@@ -8,19 +8,19 @@ These are tools from the [ExecutableBooks project](https://executablebooks.org),
 
 ````{grid}
 ```{grid-item-card} Cloud and hub usage ☁️
-:link: cloud
+:link: cloud/
 :link-type: doc
 
 Our currently running infrastructure and active users over time.
 ```
 ```{grid-item-card} Accounting analysis 📈
-:link: finances
+:link: finances/
 :link-type: doc
 
 Our financial activity, including our costs and revenue broken down by category.
 ```
 ```{grid-item-card} Upstream support 💗
-:link: upstream
+:link: upstream/
 :link-type: doc
 
 Our contributions and activity in key upstream communities that we depend on and use.
