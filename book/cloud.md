@@ -82,6 +82,7 @@ df = pd.read_csv("data/hub-activity.csv")
 # Remove staging hubs since those aren't relevant to stats
 df = df[~df.hub.str.contains("staging")]
 
+# To make it easier to visualize these
 df["clusterhub"] = df.apply(lambda a: f"{a['cluster']}/{a['hub']}", axis=1)
 ```
 
@@ -180,8 +181,8 @@ tags: [remove-cell]
 # Load the latest AirTable data
 communities = pd.read_csv("./data/airtable-communities.csv")
 
-# Drop communities that have a location and at least one hub
-communities = communities.dropna(subset=["Location", "Hubs"])
+# Drop communities that are missing location/hubs/domains from hubs
+communities = communities.dropna(subset=["Location", "Hubs", "domain (from Hubs)"])
 
 # Clean up a bit
 communities = communities.rename(columns={"domain (from Hubs)": "domain"})
@@ -263,7 +264,7 @@ plotly_config = dict(
     size="users_scaled", # size of markers, "pop" is one of the columns of gapminder
     color="Constellation",
     width=900, height=500,
-    color_discrete_sequence=qualitative.D3
+    color_discrete_sequence=qualitative.D3,
 )
 fig = px.scatter_geo(communities, projection="natural earth", **plotly_config)
 fig.show()
