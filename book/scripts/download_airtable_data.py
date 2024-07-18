@@ -35,7 +35,8 @@ base_id = "appbjBTRIbgRiElkr"
 
 views = [
     ("communities", "tblYGygEo5PQBSUYt", "viw2F6xVWJujWKCuj"),
-    ("accounting", "tblNjmVbPaVmC7wc3", "viw1daKSu2dTcd5lg")
+    ("accounting", "tblNjmVbPaVmC7wc3", "viw1daKSu2dTcd5lg"),
+    ("leads", "tblmRU6U53i8o7z2I", "viw8xzzSXk8tPwBho")
 ]
 ## Load in airtable
 api = Api(api_key)
