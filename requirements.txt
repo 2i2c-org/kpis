@@ -31,3 +31,6 @@ jupyterlab-myst
 python-dotenv
 dateparser
 prometheus-pandas
+
+# For downloading Google Sheets
+openpyxl
