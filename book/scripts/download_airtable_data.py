@@ -37,10 +37,7 @@ views = [
     ("communities", "appbjBTRIbgRiElkr", "tblYGygEo5PQBSUYt", "viw2F6xVWJujWKCuj"),
     ("accounting", "appbjBTRIbgRiElkr", "tblNjmVbPaVmC7wc3", "viw1daKSu2dTcd5lg"),
     ("contracts", "appbjBTRIbgRiElkr", "tbliwB70vYg3hlkb1", "viwWPJhcFbXUJZUO6"),
-    ("quarters", "appbjBTRIbgRiElkr", "tblCJMyV7jg6MM9ft", "viwyXdWy1Fns4afdP"),
-    ("leads", "appbjBTRIbgRiElkr", "tblmRU6U53i8o7z2I", "viwVddEUxZE5WHXFB"),
-    ("people", "appHxyAV6MR1g8e2w", "tblP0d3WPPNaov34H", "viwqJTuhml5Do1Uhe"),
-    ("roles", "appHxyAV6MR1g8e2w", "tblhjCAPx1Fb1A0FE", "viwAbKQOByVR92C09"),
+    ("leads", "appbjBTRIbgRiElkr", "tblmRU6U53i8o7z2I", "viw8xzzSXk8tPwBho"),
 ]
 ## Load in airtable
 api = Api(api_key)

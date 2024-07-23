@@ -1,4 +1,7 @@
-import plotly.io as pio
+"""
+A helper module to quickly generate visualizations that use 2i2c's colors and style.
+Importing this modifies plotly defaults to use these colors.
+"""
 colors = dict(
     bigblue = "#1D4EF5",
     paleblue = "#F2F5FC",
@@ -11,9 +14,12 @@ colors = dict(
     coral = "#FF4E4F",
     yellow = "#FFDE17",
 )
-pio.templates.default = "plotly_white"
-custom_template = pio.templates["plotly_white"].layout.template
-custom_template.layout.update(plot_bgcolor=colors["paleblue"], paper_bgcolor=colors["paleblue"])
-custom_template.layout.colorway = [colors["bigblue"], colors["coral"], colors["lightgreen"], colors["magenta"], colors["pink"], colors["yellow"]]
-pio.templates["custom_theme"] = custom_template
-pio.templates.default = "custom_theme"
+def set_plotly_defaults():
+    """Update plotly defaults to use these colors."""
+    import plotly.io as pio
+    pio.templates.default = "plotly_white"
+    custom_template = pio.templates["plotly_white"].layout.template
+    custom_template.layout.update(plot_bgcolor=colors["paleblue"], paper_bgcolor=colors["paleblue"])
+    custom_template.layout.colorway = [colors["bigblue"], colors["coral"], colors["lightgreen"], colors["magenta"], colors["pink"], colors["yellow"]]
+    pio.templates["custom_theme"] = custom_template
+    pio.templates.default = "custom_theme"
