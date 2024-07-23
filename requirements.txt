@@ -22,12 +22,18 @@ tomlkit
 vega_datasets
 
 # For developing
+jupyterlab-code-formatter
+black
+isort
 itables
 jupyterlab
 jupytext
 jupyterlab-myst
 
-# For loading grafana daa
+# For loading grafana data
 python-dotenv
 dateparser
 prometheus-pandas
+
+# For downloading Google Sheets
+openpyxl

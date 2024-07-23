@@ -52,6 +52,7 @@ import plotly.express as px
 import altair as alt
 from textwrap import dedent
 from IPython.display import Markdown, display
+from twoc import colors
 ```
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}}
@@ -251,6 +252,11 @@ communities['lon_jitter'] = communities['lon'].map(lambda a: a + np.random.norma
 ```
 
 ```{code-cell} ipython3
+def update_geo_fig(fig):
+    fig.update_geos(bgcolor=colors["paleblue"], landcolor="white", showland=True)
+```
+
+```{code-cell} ipython3
 ---
 editable: true
 raw_mimetype: ''
@@ -267,11 +273,11 @@ plotly_config = dict(
     color_discrete_sequence=qualitative.D3,
 )
 fig = px.scatter_geo(communities, projection="natural earth", **plotly_config)
-fig.show()
-
-
 fig2 = px.scatter_geo(communities, projection="albers usa", **plotly_config)
-fig2.show()
+
+for fig in [fig, fig2]:
+    update_geo_fig(fig)
+    fig.show()
 ```
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}}
@@ -300,11 +306,13 @@ fig = px.scatter_geo(communities, projection="natural earth", color_discrete_seq
 path_maps = Path("_static/maps/")
 path_maps.mkdir(parents=True, exist_ok=True)
 path_file = path_maps / f"2i2c_hubs_map.png"
+update_geo_fig(fig)
 fig.write_image(path_file)
 
 # Output for the cell
 display(Markdown(f"**All 2i2c hubs**"))
 display(Markdown(f"Permanent link: {{download}}`2i2c.org/kpis{path_file} <{path_file}>`"))
+update_geo_fig(fig)
 fig.show("png")
 
 
@@ -314,6 +322,7 @@ for constellation, idata in communities.groupby("Constellation"):
     path_file = f"_static/maps/{constellation}_map.png"
     display(Markdown(f"Constellation: **{constellation}**"))
     display(Markdown(f"Permanent link: {{download}}`2i2c.org/kpis{path_file} <{path_file}>`"))
+    update_geo_fig(fig)
     fig.show("png")
     fig.write_image(path_file)
 ```
@@ -469,4 +478,8 @@ for scale in scale_ordering:
 display(alt.hconcat(*chs_bins, title=f"Number of communities in bins of active users"))
 display(alt.hconcat(*chs_users, title=f"Total Active Users by community size"))
 display(alt.hconcat(*chs_perc, title=f"% {scale} Total Active Users by community size"))
+```
+
+```{code-cell} ipython3
+
 ```

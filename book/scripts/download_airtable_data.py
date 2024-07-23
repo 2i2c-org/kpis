@@ -31,15 +31,17 @@ api_key = os.environ.get("AIRTABLE_API_KEY")
 if not api_key:
     raise ValueError("Missing AIRTABLE_API_KEY")
 
-base_id = "appbjBTRIbgRiElkr"
-
+# These correspond to AirTable URLs of the form:
+#   airtable.com/{{ BASE ID }}/{{ TABLE ID }}/{{VIEW ID}}
 views = [
-    ("communities", "tblYGygEo5PQBSUYt", "viw2F6xVWJujWKCuj"),
-    ("accounting", "tblNjmVbPaVmC7wc3", "viw1daKSu2dTcd5lg")
+    ("communities", "appbjBTRIbgRiElkr", "tblYGygEo5PQBSUYt", "viw2F6xVWJujWKCuj"),
+    ("accounting", "appbjBTRIbgRiElkr", "tblNjmVbPaVmC7wc3", "viw1daKSu2dTcd5lg"),
+    ("contracts", "appbjBTRIbgRiElkr", "tbliwB70vYg3hlkb1", "viwWPJhcFbXUJZUO6"),
+    ("leads", "appbjBTRIbgRiElkr", "tblmRU6U53i8o7z2I", "viw8xzzSXk8tPwBho"),
 ]
 ## Load in airtable
 api = Api(api_key)
-for (name, table_id, view_id) in views:
+for (name, base_id, table_id, view_id) in views:
     table = api.table(base_id, table_id)
     records = table.all(view=view_id)
     print(f"Downloading AirTable data from https://airtable.com/{base_id}/{table_id}/{view_id}...")
