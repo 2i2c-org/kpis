@@ -23,6 +23,7 @@ myst_enable_extensions = [
 ]
 
 nb_render_markdown_format = "myst"
+nb_execution_allow_errors = False
 
 html_title = "2i2c KPIs"
 html_theme = "sphinx_2i2c_theme"
