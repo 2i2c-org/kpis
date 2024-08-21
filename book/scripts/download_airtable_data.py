@@ -38,6 +38,7 @@ views = [
     ("accounting", "appbjBTRIbgRiElkr", "tblNjmVbPaVmC7wc3", "viw1daKSu2dTcd5lg"),
     ("contracts", "appbjBTRIbgRiElkr", "tbliwB70vYg3hlkb1", "viwWPJhcFbXUJZUO6"),
     ("leads", "appbjBTRIbgRiElkr", "tblmRU6U53i8o7z2I", "viw8xzzSXk8tPwBho"),
+    ("fundraising", "appbjBTRIbgRiElkr", "tblM9Fv7J4Nl4c0L3", "viwtUpulzqMmqkxsJ"),
 ]
 ## Load in airtable
 api = Api(api_key)

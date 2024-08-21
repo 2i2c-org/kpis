@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.3
+    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -101,7 +101,7 @@ for _, row in data.iterrows():
     iicomments = pd.DataFrame(literal_eval(row["comments"]))
     if iicomments.shape[0] > 0:
         iicomments["author"] = iicomments["author"].map(lambda a: a["login"] if a is not None else None)
-        iicomments[["org", "repo"]] = row[["org", "repo"]]
+        iicomments.loc[:, ["org", "repo"]] = row[["org", "repo"]].tolist()
         new_comments.append(iicomments)
 comments = pd.concat(new_comments)
 
@@ -316,7 +316,7 @@ tags: [remove-input]
 ---
 issues = data.loc[["issues/" in ii for ii in data["url"].values]]
 issuesByUs = issues.dropna(subset="createdAt").query("author in @team")
-visualize_over_time(issuesByUs, on="closedAt", title="Issues opened by a team member, over time")
+visualize_over_time(issuesByUs, on="updatedAt", title="Issues opened by a team member, over time")
 ```
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}}
@@ -343,9 +343,14 @@ visualize_by_org_repo(issuesByUs, "Issues opened by a team member, by repository
 
 Comments are a reflection of where we're participating in conversations, discussions, brainstorming, guiding others, etc. They are a reflection of "overall activity" because comments tend to happen everywhere, and may not be associated with a specific change to the code.
 
-+++ {"editable": true, "slideshow": {"slide_type": ""}}
-
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+---
 visualize_over_time(comments, title="Comments made by a team member, over time")
+```
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}}
 
