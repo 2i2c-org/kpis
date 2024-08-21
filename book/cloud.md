@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.2
+    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -252,8 +252,28 @@ communities['lon_jitter'] = communities['lon'].map(lambda a: a + np.random.norma
 ```
 
 ```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
 def update_geo_fig(fig):
-    fig.update_geos(bgcolor=colors["paleblue"], landcolor="white", showland=True)
+    """Modify the style of a geo plot for 2i2c branding."""
+    fig.update_geos(oceancolor=colors["paleblue"], landcolor="white", subunitcolor="grey", bgcolor='rgba(0,0,0,0)', showland=True, showocean=True)
+    fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)"
+)
+
+def update_png_fig(fig):
+    """Update a plot for printing to a PNG."""
+    # Set minimum marker size
+    fig.update_traces(
+        marker=dict(
+            sizemin=10,
+        )
+    )
+    # Remove margin on PNG exports
+    fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
 ```
 
 ```{code-cell} ipython3
@@ -307,6 +327,7 @@ path_maps = Path("_static/maps/")
 path_maps.mkdir(parents=True, exist_ok=True)
 path_file = path_maps / f"2i2c_hubs_map.png"
 update_geo_fig(fig)
+update_png_fig(fig)
 fig.write_image(path_file)
 
 # Output for the cell
@@ -323,6 +344,7 @@ for constellation, idata in communities.groupby("Constellation"):
     display(Markdown(f"Constellation: **{constellation}**"))
     display(Markdown(f"Permanent link: {{download}}`2i2c.org/kpis{path_file} <{path_file}>`"))
     update_geo_fig(fig)
+    update_png_fig(fig)
     fig.show("png")
     fig.write_image(path_file)
 ```

@@ -22,13 +22,13 @@ tomlkit
 vega_datasets
 
 # For developing
-jupyterlab-code-formatter
 black
 isort
 itables
 jupyterlab
-jupytext
+jupyterlab-code-formatter
 jupyterlab-myst
+jupytext
 
 # For loading grafana data
 python-dotenv

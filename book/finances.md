@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.3
+    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -14,9 +14,9 @@ kernelspec:
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}}
 
-# Contracts projections
+# Revenue projections
 
-This document shows 2i2c's historical contract data, and predicts 2i2c's monthly income along with its costs using data from our [Leads AirTable](https://airtable.com/appbjBTRIbgRiElkr/tblmRU6U53i8o7z2I/viw8xzzSXk8tPwBho?blocks=hide), which also pulls in data from our [Contracts AirTable](https://airtable.com/appbjBTRIbgRiElkr/tbliwB70vYg3hlkb1/viwWPJhcFbXUJZUO6?blocks=hide).
+This document shows 2i2c's historical revenue data by contract, and predicts 2i2c's monthly income along with its costs using data from our [Leads AirTable](https://airtable.com/appbjBTRIbgRiElkr/tblmRU6U53i8o7z2I/viw8xzzSXk8tPwBho?blocks=hide), which also pulls in data from our [Contracts AirTable](https://airtable.com/appbjBTRIbgRiElkr/tbliwB70vYg3hlkb1/viwWPJhcFbXUJZUO6?blocks=hide).
 
 When built via Jupyter Book, all leads are anonymized.
 If you want de-anonymized leads, run the notebook locally.
@@ -70,6 +70,7 @@ import plotly_express as px
 
 # Apply 2i2c default styles
 import twoc
+from twoc.dates import round_to_nearest_month
 from IPython.display import Markdown
 from itables import show as ishow
 from plotly.graph_objects import Figure
@@ -155,8 +156,6 @@ column_mappings = {
     "Contract Type": "Contract Type",
     # The type of service
     "Engagement Type": "Engagement Type",
-    # GitHub issue
-    "Issue": "Issue",
 }
 leads = pd.read_csv("./data/airtable-leads.csv", usecols=column_mappings.keys())
 leads = leads.rename(columns=column_mappings)
@@ -167,12 +166,49 @@ leads = leads.rename(columns=column_mappings)
 editable: true
 slideshow:
   slide_type: ''
+tags: [remove-cell]
+---
+# Read in latest fundraising data from AirTable
+column_mappings = {
+    # Unique name
+    "Name": "Name",
+    # Status of the lead
+    "Status": "Status",
+    # The total amount for 2i2c after subtracting the FSP fee
+    "2i2c spendable amount": "Amount for 2i2c",
+    # The chance that we'll get this award
+    "% probability of success": "% success",
+    # The start date of the contract or the lead depending on what's there
+    "Start Date (final)": "Start Date",
+    # The end date of the contract or the lead depending on what's there
+    "End Date (final)": "End Date",
+}
+fundraising = pd.read_csv("./data/airtable-fundraising.csv", usecols=column_mappings.keys())
+fundraising = fundraising.rename(columns=column_mappings)
+
+# Quick clean up
+fundraising["Contract Type"] = "Core Funding"
+fundraising["Engagement Type"] = "Core Funding"
+fundraising = fundraising.replace({"Ask": "Prospect", "Cultivate": "Prospect"})
+fundraising = fundraising.query("`% success` > 0")
+fundraising["% success"] /= 100.
+```
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
 tags: [remove-input]
 ---
+# Concatenate them so that we can analyze them together
+leads = pd.concat([leads, fundraising])
+
 # Anonymize leads if we are in a CI/CD environment because this will be public
 if "GITHUB_ACTION" in os.environ:
     for ix, name in leads["Name"].items():
         leads.loc[ix, "Name"] = f"Lead {ix}"
+
 leads.head().style.set_caption("Sample leads from our Leads AirTable.")
 ```
 
@@ -199,7 +235,7 @@ missing_amount_for_2i2c = ~leads.eval("`Amount for 2i2c` > 0")
 
 # Don't worry about the % success / issue columns in case they're missing
 missing_values = (
-    leads.drop(columns=["% success", "Issue"]).isnull().apply(lambda a: any(a), axis=1)
+    leads.drop(columns=["% success"]).isnull().apply(lambda a: any(a), axis=1)
 )
 leads_to_remove = missing_amount_for_2i2c | missing_values
 leads_to_remove = leads_to_remove[leads_to_remove == True].index
@@ -234,16 +270,18 @@ for ix, irow in leads.iterrows():
     # If it's awarded then skip it because we're only marking prospectives
     if "Awarded" in irow["Status"]:
         continue
-    if irow["Status"] == "Renewal":
+    if irow["Status"].lower() == "renewal":
         leads.loc[ix, "Contract Type"] = "Projected renewal"
         leads.loc[ix, "Engagement Type"] = "Projected renewal"
+    elif irow["Status"].lower() == "needs admin":
+        leads.loc[ix, "Contract Type"] = "Needs admin"
+        leads.loc[ix, "Engagement Type"] = "Needs admin"
+    elif irow["Engagement Type"].lower() == "core funding":
+        leads.loc[ix, "Contract Type"] = "Projected core funding"
+        leads.loc[ix, "Engagement Type"] = "Projected core funding"
     else:
-        if irow["Engagement Type"] == "Core funding":
-            leads.loc[ix, "Contract Type"] = "Projected core funding"
-            leads.loc[ix, "Engagement Type"] = "Projected core funding"
-        else:
-            leads.loc[ix, "Contract Type"] = "Projected new contract"
-            leads.loc[ix, "Engagement Type"] = "Projected new contract"
+        leads.loc[ix, "Contract Type"] = "Projected new contract"
+        leads.loc[ix, "Engagement Type"] = "Projected new contract"
 ```
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}}
@@ -295,15 +333,6 @@ slideshow:
   slide_type: ''
 tags: [remove-cell]
 ---
-def round_to_nearest_month(date):
-    start_of_current_month = pd.to_datetime(f"{date.year}-{date.month}")
-    start_of_next_month = date + pd.offsets.MonthBegin()
-    if date.day < 15:
-        return start_of_current_month
-    else:
-        return start_of_next_month
-
-
 # Convert date columns to DateTime objects
 date_cols = ["Start Date", "End Date"]
 for col in date_cols:
@@ -430,6 +459,7 @@ colors = {
     "Core funding": twoc.colors["bigblue"],
     "Partnership": twoc.colors["mauve"],
     "Hub service": twoc.colors["coral"],
+    "Needs admin": "#ffa8a9",
     "Projected renewal": "grey",
     "Projected core funding": "darkgrey",
     "Projected new contract": "lightgrey",
@@ -461,6 +491,8 @@ write_image(figservice, "_build/images/service_type.png")
 figservice
 ```
 
++++ {"editable": true, "slideshow": {"slide_type": ""}}
+
 ## Budget projections
 
 Now we project into the future by including our **potential leads** as well.
@@ -484,15 +516,20 @@ date_future = round_to_nearest_month(today + datetime.timedelta(days=30 * 12))
 qu_date = f"Date >= '{date_past:%Y-%m-%d}' and Date <= '{date_future:%Y-%m-%d}'"
 
 for iname in ["Monthly amount (weighted)", "Monthly amount"]:
+    # Bar plot of revenue
+    data_plot = amortized_records.query(qu_date)
+    if iname == "Monthly amount":
+        # If we are using total amount, only use records with > 25% chance success
+        data_plot = data_plot.query("`% success` > .25")
+
     figservice = px.bar(
-        amortized_records.query(qu_date),
+        data_plot,
         x="Date",
         y=iname,
         color="Engagement Type",
         category_orders={"Engagement Type": colors.keys()},
         color_discrete_map=colors,
         hover_name="Name",
-        # hover_data=["Monthly amount", "Monthly amount (weighted)", "Total amount", "% success"],
         hover_data={
             "Monthly amount": ":$,.0f",
             "Monthly amount (weighted)": ":$,.0f",
@@ -502,10 +539,12 @@ for iname in ["Monthly amount (weighted)", "Monthly amount"]:
         title=(
             "Monthly Revenue (weighted)"
             if "weighted" in iname
-            else "Monthly Revenue (best case scenario)"
+            else "Monthly Revenue if contracts over 50% chance are awarded"
         ),
     )
     figservice.update_traces(marker_line_width=0.2)
+
+    # Dotted line plot of costs
     figservice.add_scatter(
         x=costs.query(qu_date)["Date"],
         y=costs.query(qu_date)["Monthly cost (no FSP)"],
