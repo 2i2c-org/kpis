@@ -146,6 +146,7 @@ book/data/city-locations.csv
 book/data/css-accounting.csv
 book/data/css-accounting-cleaned.csv
 book/data/airtable-*.csv
+book/data/css-accounting
 
 # A place to manually store data we use as part of data updating
 book/scripts/_data/
