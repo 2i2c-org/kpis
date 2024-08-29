@@ -102,10 +102,6 @@ dfnew = pd.DataFrame(dfnew)
 
 
 # +
-# If we want to inspect it
-# ishow(dfnew)
-
-# +
 # Add major category for later use
 def clean_category(cat):
     # Extract the category string
@@ -122,14 +118,80 @@ dfnew["Category Major"] = dfnew["Category"].map(clean_category)
 
 # Date type
 dfnew["Date"] = pd.to_datetime(dfnew["Date"])
+print(f"Finished preparing {len(dfnew)} new items...")
+
+# +
+# If we want to inspect it
+# ishow(dfnew)
 # -
 
-# ## Save to CSV for upload
-#
+# ## Update AirTable
 
-# Create a new CSV that we'll use
-newpath = path.parent / (path.stem + "-cleaned" + path.suffix)
-dfnew.to_csv(newpath, index=False)
+# Load the airtable records
+
+# +
+from pyairtable import Api
+import pandas as pd
+import os
+from pathlib import Path
+
+# %%
+# This API key is a secret in our KPIs repository as well
+api_key = os.environ.get("AIRTABLE_API_KEY")
+if not api_key:
+    raise ValueError("Missing AIRTABLE_API_KEY")
+
+## Load in airtable
+api = Api(api_key)
+base_id = "appbjBTRIbgRiElkr"
+table_id = "tblNjmVbPaVmC7wc3"
+view_id = "viw1daKSu2dTcd5lg"
+table = api.table(base_id, table_id)
+records = table.all(view=view_id)
+print(f"Found {len(records)} records...")
+# -
+
+# ### Delete
+#
+# Delete all current records
+
+result = table.batch_delete([ii["id"] for ii in records])
+print(f"Finished deleting {len(result)} results...")
+
+# ### Create
+#
+# Create new records from the updated data.
+#
+# This will update [the plots at this interface](https://airtable.com/appbjBTRIbgRiElkr/pag7qUaeemormNSAf).
+
+# +
+# Convert to a records dict and remove empty columns
+string_columns = ["Account Code", "Date", "Invoice Number", "Reference"]
+
+# Stringify some columns
+for col in string_columns:
+    dfnew[col] = dfnew[col].map(str)
+
+output = []
+for ix, vals in dfnew.iterrows():
+    # Remove any missing values
+    vals = vals.dropna()
+    
+    # Stringify some columns
+    for col in string_columns:
+        if col not in vals:
+            continue
+        vals[col] = str(vals[col])
+
+    # Make empty any string "none" values
+    for key, val in vals.items():
+        if any(val == ii for ii in ["None", "nan"]):
+            vals[key] = ''
+    output.append(vals.to_dict())
+# -
+
+results = table.batch_create(output, typecast=False)
+print(f"Finished adding {len(results)} results...")
 
 # ## Visualize
 
