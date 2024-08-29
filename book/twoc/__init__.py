@@ -2,6 +2,9 @@
 A helper module to quickly generate visualizations that use 2i2c's colors and style.
 Importing this modifies plotly defaults to use these colors.
 """
+import os
+
+# Colors for our brand
 colors = dict(
     bigblue = "#1D4EF5",
     paleblue = "#F2F5FC",
@@ -23,3 +26,10 @@ def set_plotly_defaults():
     custom_template.layout.colorway = [colors["bigblue"], colors["coral"], colors["lightgreen"], colors["magenta"], colors["pink"], colors["yellow"]]
     pio.templates["custom_theme"] = custom_template
     pio.templates.default = "custom_theme"
+
+# This API key is a secret in our KPIs repository as well
+def api_key(env="AIRTABLE_API_KEY"):
+    api_key = os.environ.get(env)
+    if not api_key:
+        raise ValueError("Missing value for key variable: {env}")
+    return api_key

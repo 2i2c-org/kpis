@@ -26,10 +26,12 @@ else:
     here = Path(".")
 
 # %%
+import sys
+path_twoc = Path("../").resolve()
+sys.path.append(str(path_twoc))
+import twoc
 # This API key is a secret in our KPIs repository as well
-api_key = os.environ.get("AIRTABLE_API_KEY")
-if not api_key:
-    raise ValueError("Missing AIRTABLE_API_KEY")
+api_key = twoc.api_key()
 
 # These correspond to AirTable URLs of the form:
 #   airtable.com/{{ BASE ID }}/{{ TABLE ID }}/{{VIEW ID}}

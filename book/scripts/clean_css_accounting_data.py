@@ -14,20 +14,22 @@
 
 # # Clean monthly accounting transactions for upload to AirTable
 #
-# Clean the "All accounting transactions" tab of a monthly CS&S accounting statement and return it in a tabular form that we can upload easily into AirTable.
+# This script does the following things:
+#
+# 1. Takes a CSV of the latest accounting transactions from CS&S.
+# 2. Parses it into a single table of transactions.
+# 3. Deletes all entries in [the Monthly Transactions AirTable](https://airtable.com/appbjBTRIbgRiElkr/pag7qUaeemormNSAf)
+# 4. Uploads all of the new transactions to that table.
 #
 # ## Instructions
 #
 # To update the AirTable data, take the following steps:
 #
+# 1. Ensure you have an API token that can upload to AirTable in an environment variable called `AIRTABLE_API_KEY`
 # 1. Find the latest accounting statement in [the CSS accounting folder](https://drive.google.com/drive/folders/1vM_QX1J8GW5z8W5WemxhhVjcCS2kEovN?usp=drive_link)
 # 2. Download the {kbd}`Account Transactions` tab as a `.csv` file.
-# 4. Place it in `data/css-accounting/`.
-# 5. Run this script.
-# 6. Find the cleaned data at `data/css-accounting/*-cleaned.csv`
-# 7. Delete all the records in [the AirTable {kbd}`Monthly Statement Transactions` tab](https://airtable.com/appbjBTRIbgRiElkr/tblNjmVbPaVmC7wc3/viw1daKSu2dTcd5lg?blocks=hide)
-# 8. On {kbd}`Monthly Statement Transactions`, right-click, then {kbd}`Import data` -> {kbd}`CSV file`
-# 9. Upload the new CSV file, click {kbd}`Exclude first row`
+# 3. Place it in `data/css-accounting/`.
+# 4. Run this script.
 #
 # ## For visualizations and summaries:
 #
@@ -135,13 +137,14 @@ import pandas as pd
 import os
 from pathlib import Path
 
-# %%
-# This API key is a secret in our KPIs repository as well
-api_key = os.environ.get("AIRTABLE_API_KEY")
-if not api_key:
-    raise ValueError("Missing AIRTABLE_API_KEY")
+import sys
+path_twoc = Path("../").resolve()
+sys.path.append(str(path_twoc))
+import twoc
 
+# %%
 ## Load in airtable
+api_key = twoc.api_key()
 api = Api(api_key)
 base_id = "appbjBTRIbgRiElkr"
 table_id = "tblNjmVbPaVmC7wc3"
@@ -195,6 +198,7 @@ print(f"Finished adding {len(results)} results...")
 
 # ## Visualize
 
+dfnew["Date"] = pd.to_datetime(dfnew["Date"])
 for kind, idata in dfnew.groupby("Kind"):
     monthly = idata.groupby("Category Major").resample("ME", on="Date").sum()["Amount"].reset_index()
     totals = monthly.groupby("Date").sum("Amount")
@@ -208,5 +212,3 @@ for kind, idata in dfnew.groupby("Kind"):
         name="Total",
     )
     fig.show()
-
-
