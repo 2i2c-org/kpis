@@ -35,4 +35,5 @@ Below is a breakdown of the categories above with more information about their s
 cloud
 upstream
 finances
+people
 ```
