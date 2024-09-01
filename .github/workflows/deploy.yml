@@ -36,12 +36,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - uses: actions/setup-python@v2
+      - uses: actions/setup-node@v2
       - name: Setup Pages
         uses: actions/configure-pages@v2
 
 
       # Install dependencies
       - run: pip install -r requirements.txt
+      # This lets us encrypt a page with a password
+      - name: Install staticrypt
+        run: |
+          npm install -g staticrypt
 
       # Download the latest AirTable community data
       - run: python book/scripts/download_airtable_data.py
@@ -63,6 +68,9 @@ jobs:
       - run: sphinx-build -b dirhtml book book/_build/dirhtml
         env:
           AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }} 
+
+      # Encrypt pages that are only meant for team consumption
+      - run: staticrypt book/_build/dirhtml/people/index.html -p ${{ secrets.STATICRYPT_PASSWORD }} -d book/_build/dirhtml/people/ --short;
 
       # Upload to GH Pages
       - name: Upload artifact
