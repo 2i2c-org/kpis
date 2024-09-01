@@ -43,7 +43,7 @@ jobs:
 
 
       # Install dependencies
-      - run: uv pip install -r requirements.txt
+      - run: uv pip install -r requirements.txt --system
       # This lets us encrypt a page with a password
       - name: Install staticrypt
         run: |
