@@ -36,13 +36,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - uses: actions/setup-python@v2
+      - uses: hynek/setup-cached-uv@v2
       - uses: actions/setup-node@v2
       - name: Setup Pages
         uses: actions/configure-pages@v2
 
 
       # Install dependencies
-      - run: pip install -r requirements.txt
+      - run: uv pip install -r requirements.txt
       # This lets us encrypt a page with a password
       - name: Install staticrypt
         run: |
@@ -60,17 +61,20 @@ jobs:
         run: python book/scripts/download_grafana_activity.py
 
       # Download the latest GitHub data
-      - run: python book/scripts/download_github_data.py
+      - name: Download latest Github data
+        run: python book/scripts/download_github_data.py
         env:
           TOKEN_GITHUB_READONLY: ${{ secrets.TOKEN_GITHUB_API_READONLY }}
 
       # Build the site
-      - run: sphinx-build -b dirhtml book book/_build/dirhtml
+      - name: Build the Sphinx site
+        run: sphinx-build -b dirhtml book book/_build/dirhtml
         env:
           AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }} 
 
       # Encrypt pages that are only meant for team consumption
-      - run: staticrypt book/_build/dirhtml/people/index.html -p ${{ secrets.STATICRYPT_PASSWORD }} -d book/_build/dirhtml/people/ --short;
+      - name: Encrypt some pages
+        run: staticrypt book/_build/dirhtml/people/index.html -p ${{ secrets.STATICRYPT_PASSWORD }} -d book/_build/dirhtml/people/ --short;
 
       # Upload to GH Pages
       - name: Upload artifact
