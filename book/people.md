@@ -170,7 +170,7 @@ This includes time off, as well as "reduced" days (e.g. half-days) and conferenc
 :::{admonition} Half days and conferences are not time off
 :class: warning
 Time off should allow you to detach from work and focus on yourself.
-If you spend part of the day working, or spend the time at a professional event, you don't really detach, and so we do not treat this as part of our time off target.
+We don't include time spent at conferences or partial days in time-off visualizations. If you spend part of the day working, or spend the time at a professional event, you don't really detach. So, while conferences and half days are still good, we we do not treat this as part of our time off target.
 :::
 
 ```{code-cell} ipython3
