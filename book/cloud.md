@@ -167,7 +167,6 @@ slideshow:
 tags: [remove-cell]
 ---
 import pandas as pd
-from geopandas.tools import geocode
 import pandas as pd
 import plotly.express as px
 import numpy as np
@@ -243,11 +242,11 @@ def geocode(city_name):
 path_locations = Path("./data/city-locations.csv")
 if not path_locations.exists():
     unique_locations = communities["Location"].unique()
-    geocoded = []
+    located = []
     for location in track(unique_locations):
         lat, lon = geocode(unique_locations)
-        geocoded.append([location, lat, lon])
-    geocoded = pd.DataFrame(geocoded, columns=["Location", "lat", "lon"])
+        located.append([location, lat, lon])
+    located = pd.DataFrame(located, columns=["Location", "lat", "lon"])
 
     # Save for future use
     located.to_csv(path_locations, index=False)
