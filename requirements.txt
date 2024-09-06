@@ -1,7 +1,6 @@
 # To run the code
 altair
 geopandas
-geopy
 ghapi
 github-activity
 ipywidgets

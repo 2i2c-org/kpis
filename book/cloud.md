@@ -52,6 +52,8 @@ import plotly.express as px
 import altair as alt
 from textwrap import dedent
 from IPython.display import Markdown, display
+import requests
+from rich.progress import track
 from twoc import colors
 ```
 
@@ -211,26 +213,46 @@ slideshow:
   slide_type: ''
 tags: [remove-cell]
 ---
+def geocode(city_name):
+    """A simpler geocoder that uses the openstreetmaps API.
+
+    We used to use geopy, but it is unmaintained and their geocoder
+    broke, so this should be more reliable.
+    """
+
+    
+    base_url = "https://nominatim.openstreetmap.org/search"
+    params = {
+        "q": city_name,
+        "format": "json",
+        "limit": 1
+    }
+    headers = {
+        "User-Agent": "YourAppName/1.0"  # Replace with your app name
+    }
+    
+    response = requests.get(base_url, params=params, headers=headers)
+    data = response.json()
+    
+    if data:
+        return float(data[0]["lat"]), float(data[0]["lon"])
+    else:
+        return None
+
 # Geocode each city so we can plot it on a map
 path_locations = Path("./data/city-locations.csv")
 if not path_locations.exists():
     unique_locations = communities["Location"].unique()
-    located = geocode(unique_locations)
-
-    # This lets us join on this column
-    located["Location"] = unique_locations
-    
-    # Add numeric lattitude and longitude
-    for ix, row in located.iterrows():
-        located.loc[ix, "lon"], located.loc[ix, "lat"] = row["geometry"].coords.xy
+    geocoded = []
+    for location in track(unique_locations):
+        lat, lon = geocode(unique_locations)
+        geocoded.append([location, lat, lon])
+    geocoded = pd.DataFrame(geocoded, columns=["Location", "lat", "lon"])
 
     # Save for future use
     located.to_csv(path_locations, index=False)
 else:
     located = pd.read_csv(path_locations, index_col=False)
-
-# Merge location information with our communities based on city name
-communities = pd.merge(located, communities, "outer", "Location")
 ```
 
 ```{code-cell} ipython3
@@ -240,6 +262,14 @@ slideshow:
   slide_type: ''
 tags: [remove-cell]
 ---
+# Merge location information with our communities based on city name
+communities = pd.merge(located, communities, "outer", "Location")
+
+# Drop any records without users because these aren't valid
+missing_records = communities["users"].isnull()
+print(f"Dropping {missing_records.sum()} records with missing users...")
+communities = communities.loc[~missing_records]
+
 # Add a log-scaled column to ease plotting
 communities["users_scaled"] = np.log10(communities["users"])
 

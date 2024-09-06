@@ -81,9 +81,10 @@ jobs:
       # Upload to GH Pages
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
+        if: always()
         with:
           # Upload entire repository
-          path: 'book/_build/dirhtml'
+          path: 'book/_build/'
 
       - name: Deploy to GitHub Pages
         id: deployment
