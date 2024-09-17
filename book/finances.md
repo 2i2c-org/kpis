@@ -97,7 +97,7 @@ slideshow:
 tags: [remove-input]
 ---
 url = "https://docs.google.com/spreadsheets/d/1hhU67gNlrMgm5qrPGROQEktpxCUckQEQGDjTbPUU94U/export?format=xlsx"
-costs = pd.read_excel(url, sheet_name="Cost modeling", header=1)
+costs = pd.read_excel(url, sheet_name="Cost modeling", header=0)
 costs = costs[["Month", "Monthly cost (no FSP)", "Monthly cost (with FSP)"]]
 costs.loc[:, "Month"] = pd.to_datetime(costs["Month"])
 costs = costs.rename(columns={"Month": "Date"})
