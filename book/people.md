@@ -85,7 +85,10 @@ tags: [remove-cell]
 ---
 # Use the GH CLI to print all of the records in our time off table
 cmd = "gh project item-list 39 --owner 2i2c-org -L 500 --format json"
-out = run(cmd.split(), text=True, capture_output=True)
+try:
+    out = run(cmd.split(), text=True, capture_output=True, check=True)
+except Exception:
+    raise ValueError(out.stderr)
 
 # Strip the output of all color codes and parse it as JSON, then a dataframe
 def strip_ansi(text):
