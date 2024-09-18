@@ -73,7 +73,7 @@ jobs:
         run: sphinx-build -v -b dirhtml book book/_build/dirhtml
         env:
           AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }} 
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TOKEN_GITHUB_API_READONLY }}
 
 
       # Encrypt pages that are only meant for team consumption
