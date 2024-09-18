@@ -80,13 +80,20 @@ jobs:
       - name: Encrypt some pages
         run: staticrypt book/_build/dirhtml/people/index.html -p ${{ secrets.STATICRYPT_PASSWORD }} -d book/_build/dirhtml/people/ --short;
 
+      # Upload artifact for looking at later
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          # Upload entire build output
+          path: 'book/_build/'
+
       # Upload to GH Pages
-      - name: Upload artifact
+      - name: Upload artifact for GH pages
         uses: actions/upload-pages-artifact@v1
         if: always()
         with:
-          # Upload entire repository
-          path: 'book/_build/'
+          # Upload the HTML folder
+          path: 'book/_build/dirhtml'
 
       - name: Deploy to GitHub Pages
         id: deployment
