@@ -189,15 +189,15 @@ column_mappings = {
     "End Date (final)": "End Date",
 }
 # TODO: BROKEN: The column names have changed and we must change them
-fundraising = pd.read_csv("./data/airtable-sales.csv", usecols=column_mappings.keys())
-fundraising = fundraising.rename(columns=column_mappings)
+# fundraising = pd.read_csv("./data/airtable-sales.csv", usecols=column_mappings.keys())
+# fundraising = fundraising.rename(columns=column_mappings)
 
-# Quick clean up
-fundraising["Contract Type"] = "Core Funding"
-fundraising["Engagement Type"] = "Core Funding"
-fundraising = fundraising.replace({"Ask": "Prospect", "Cultivate": "Prospect"})
-fundraising = fundraising.query("`% success` > 0")
-fundraising["% success"] /= 100.
+# # Quick clean up
+# fundraising["Contract Type"] = "Core Funding"
+# fundraising["Engagement Type"] = "Core Funding"
+# fundraising = fundraising.replace({"Ask": "Prospect", "Cultivate": "Prospect"})
+# fundraising = fundraising.query("`% success` > 0")
+# fundraising["% success"] /= 100.
 ```
 
 ```{code-cell} ipython3
@@ -207,15 +207,15 @@ slideshow:
   slide_type: ''
 tags: [remove-input]
 ---
-# Concatenate them so that we can analyze them together
-leads = pd.concat([leads, fundraising])
+# # Concatenate them so that we can analyze them together
+# leads = pd.concat([leads, fundraising])
 
-# Anonymize leads if we are in a CI/CD environment because this will be public
-if "GITHUB_ACTION" in os.environ:
-    for ix, name in leads["Name"].items():
-        leads.loc[ix, "Name"] = f"Lead {ix}"
+# # Anonymize leads if we are in a CI/CD environment because this will be public
+# if "GITHUB_ACTION" in os.environ:
+#     for ix, name in leads["Name"].items():
+#         leads.loc[ix, "Name"] = f"Lead {ix}"
 
-leads.head().style.set_caption("Sample leads from our Leads AirTable.")
+# leads.head().style.set_caption("Sample leads from our Leads AirTable.")
 ```
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}, "tags": ["remove-cell"]}
@@ -231,28 +231,28 @@ slideshow:
   slide_type: ''
 tags: [remove-cell]
 ---
-# Remove all lost leads
-leads = leads.query("Status != 'Lost'")
+# # Remove all lost leads
+# leads = leads.query("Status != 'Lost'")
 
-# Remove any lead that:
-#   1. Misses information from the columns above
-#   2. Has an Amount for 2i2c that isn't > 0
-missing_amount_for_2i2c = ~leads.eval("`Amount for 2i2c` > 0")
+# # Remove any lead that:
+# #   1. Misses information from the columns above
+# #   2. Has an Amount for 2i2c that isn't > 0
+# missing_amount_for_2i2c = ~leads.eval("`Amount for 2i2c` > 0")
 
-# Don't worry about the % success / issue columns in case they're missing
-missing_values = (
-    leads.drop(columns=["% success"]).isnull().apply(lambda a: any(a), axis=1)
-)
-leads_to_remove = missing_amount_for_2i2c | missing_values
-leads_to_remove = leads_to_remove[leads_to_remove == True].index
-leads_to_remove = leads.loc[leads_to_remove]
+# # Don't worry about the % success / issue columns in case they're missing
+# missing_values = (
+#     leads.drop(columns=["% success"]).isnull().apply(lambda a: any(a), axis=1)
+# )
+# leads_to_remove = missing_amount_for_2i2c | missing_values
+# leads_to_remove = leads_to_remove[leads_to_remove == True].index
+# leads_to_remove = leads.loc[leads_to_remove]
 
-# Drop all leads with missing information
-print(f"Dropping {len(leads_to_remove)} leads...")
-leads = leads.drop(leads_to_remove.index)
+# # Drop all leads with missing information
+# print(f"Dropping {len(leads_to_remove)} leads...")
+# leads = leads.drop(leads_to_remove.index)
 
-# If we want to look at the leads that were dropped
-# ishow(leads_to_remove, pageLength=50)
+# # If we want to look at the leads that were dropped
+# # ishow(leads_to_remove, pageLength=50)
 ```
 
 ```{code-cell} ipython3
@@ -262,32 +262,32 @@ slideshow:
   slide_type: ''
 tags: [remove-cell]
 ---
-# Consolidate multiple service types into one to simplify plotting
-rename_labels = {
-    "Hub: Special": "Hub service",
-    "Hub: Research": "Hub service",
-    "Hub: Education": "Hub service",
-    "Development": "Partnership",
-}
-leads = leads.replace(rename_labels)
+# # Consolidate multiple service types into one to simplify plotting
+# rename_labels = {
+#     "Hub: Special": "Hub service",
+#     "Hub: Research": "Hub service",
+#     "Hub: Education": "Hub service",
+#     "Development": "Partnership",
+# }
+# leads = leads.replace(rename_labels)
 
-# Label leads as renewals vs. new contracts for better plotting
-for ix, irow in leads.iterrows():
-    # If it's awarded then skip it because we're only marking prospectives
-    if "Awarded" in irow["Status"]:
-        continue
-    if irow["Status"].lower() == "renewal":
-        leads.loc[ix, "Contract Type"] = "Projected renewal"
-        leads.loc[ix, "Engagement Type"] = "Projected renewal"
-    elif irow["Status"].lower() == "needs admin":
-        leads.loc[ix, "Contract Type"] = "Needs admin"
-        leads.loc[ix, "Engagement Type"] = "Needs admin"
-    elif irow["Engagement Type"].lower() == "core funding":
-        leads.loc[ix, "Contract Type"] = "Projected core funding"
-        leads.loc[ix, "Engagement Type"] = "Projected core funding"
-    else:
-        leads.loc[ix, "Contract Type"] = "Projected new contract"
-        leads.loc[ix, "Engagement Type"] = "Projected new contract"
+# # Label leads as renewals vs. new contracts for better plotting
+# for ix, irow in leads.iterrows():
+#     # If it's awarded then skip it because we're only marking prospectives
+#     if "Awarded" in irow["Status"]:
+#         continue
+#     if irow["Status"].lower() == "renewal":
+#         leads.loc[ix, "Contract Type"] = "Projected renewal"
+#         leads.loc[ix, "Engagement Type"] = "Projected renewal"
+#     elif irow["Status"].lower() == "needs admin":
+#         leads.loc[ix, "Contract Type"] = "Needs admin"
+#         leads.loc[ix, "Engagement Type"] = "Needs admin"
+#     elif irow["Engagement Type"].lower() == "core funding":
+#         leads.loc[ix, "Contract Type"] = "Projected core funding"
+#         leads.loc[ix, "Engagement Type"] = "Projected core funding"
+#     else:
+#         leads.loc[ix, "Contract Type"] = "Projected new contract"
+#         leads.loc[ix, "Engagement Type"] = "Projected new contract"
 ```
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}}
@@ -314,15 +314,15 @@ slideshow:
   slide_type: ''
 tags: [remove-cell]
 ---
-# If something was awarded, treat its weighted amount as 100% regardless of the number we had there
-for ix, irow in leads.iterrows():
-    if irow["% success"]:
-        if "Awarded" in irow["Status"]:
-            leads.loc[ix, "Amount (weighted)"] = irow["Amount for 2i2c"]
-        else:
-            leads.loc[ix, "Amount (weighted)"] = (
-                irow["Amount for 2i2c"] * irow["% success"]
-            )
+# # If something was awarded, treat its weighted amount as 100% regardless of the number we had there
+# for ix, irow in leads.iterrows():
+#     if irow["% success"]:
+#         if "Awarded" in irow["Status"]:
+#             leads.loc[ix, "Amount (weighted)"] = irow["Amount for 2i2c"]
+#         else:
+#             leads.loc[ix, "Amount (weighted)"] = (
+#                 irow["Amount for 2i2c"] * irow["% success"]
+#             )
 ```
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}}
@@ -339,13 +339,13 @@ slideshow:
   slide_type: ''
 tags: [remove-cell]
 ---
-# Convert date columns to DateTime objects
-date_cols = ["Start Date", "End Date"]
-for col in date_cols:
-    leads.loc[:, col] = pd.to_datetime(leads[col])
-    # Round any dates to the nearest month start.
-    # This controls for the fact that some dates are the 1st, others the 31st.
-    leads.loc[:, col] = leads[col].apply(lambda x: round_to_nearest_month(x))
+# # Convert date columns to DateTime objects
+# date_cols = ["Start Date", "End Date"]
+# for col in date_cols:
+#     leads.loc[:, col] = pd.to_datetime(leads[col])
+#     # Round any dates to the nearest month start.
+#     # This controls for the fact that some dates are the 1st, others the 31st.
+#     leads.loc[:, col] = leads[col].apply(lambda x: round_to_nearest_month(x))
 ```
 
 ```{code-cell} ipython3
@@ -355,34 +355,34 @@ slideshow:
   slide_type: ''
 tags: [remove-cell]
 ---
-# Generate a month entry for each lead with its amortized monthly amount
-amortized_records = []
+# # Generate a month entry for each lead with its amortized monthly amount
+# amortized_records = []
 
-for ix, irow in leads.iterrows():
-    # We *exclude* the month of the right-most date because we know it is always the 1st
-    # This is because of the month rounding we did above
-    dates = pd.date_range(
-        irow["Start Date"], irow["End Date"], freq="MS", inclusive="left"
-    )
-    n_months = len(dates)
-    for date in dates:
-        amortized_records.append(
-            {
-                "Date": date,
-                "Total amount": irow["Amount for 2i2c"],
-                "Monthly amount": irow["Amount for 2i2c"] / n_months,
-                "Monthly amount (weighted)": irow["Amount (weighted)"] / n_months,
-                "Contract Type": irow["Contract Type"],
-                "Engagement Type": irow["Engagement Type"],
-                "Name": irow["Name"],
-                "% success": irow["% success"],
-            }
-        )
-amortized_records = pd.DataFrame(amortized_records)
+# for ix, irow in leads.iterrows():
+#     # We *exclude* the month of the right-most date because we know it is always the 1st
+#     # This is because of the month rounding we did above
+#     dates = pd.date_range(
+#         irow["Start Date"], irow["End Date"], freq="MS", inclusive="left"
+#     )
+#     n_months = len(dates)
+#     for date in dates:
+#         amortized_records.append(
+#             {
+#                 "Date": date,
+#                 "Total amount": irow["Amount for 2i2c"],
+#                 "Monthly amount": irow["Amount for 2i2c"] / n_months,
+#                 "Monthly amount (weighted)": irow["Amount (weighted)"] / n_months,
+#                 "Contract Type": irow["Contract Type"],
+#                 "Engagement Type": irow["Engagement Type"],
+#                 "Name": irow["Name"],
+#                 "% success": irow["% success"],
+#             }
+#         )
+# amortized_records = pd.DataFrame(amortized_records)
 
-# Drop all records before January 2022 since data is unreliable before then
-amortized_records = amortized_records.query("Date >= '2022-01-01'")
-amortized_records = amortized_records.sort_values("Monthly amount", ascending=False)
+# # Drop all records before January 2022 since data is unreliable before then
+# amortized_records = amortized_records.query("Date >= '2022-01-01'")
+# amortized_records = amortized_records.sort_values("Monthly amount", ascending=False)
 ```
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}}
@@ -402,43 +402,43 @@ slideshow:
   slide_type: ''
 tags: [remove-cell]
 ---
-# Preparing figures for visualization
-legend_orientation = dict(
-    orientation="h",  # Horizontal orientation
-    yanchor="bottom",
-    y=1.02,
-    xanchor="center",
-    x=0.5,
-)
+# # Preparing figures for visualization
+# legend_orientation = dict(
+#     orientation="h",  # Horizontal orientation
+#     yanchor="bottom",
+#     y=1.02,
+#     xanchor="center",
+#     x=0.5,
+# )
 
 
-def update_layout(fig):
-    fig.update_layout(
-        legend=legend_orientation,
-        legend_title_text="",
-        yaxis_title="",
-        xaxis_title="",
-    )
+# def update_layout(fig):
+#     fig.update_layout(
+#         legend=legend_orientation,
+#         legend_title_text="",
+#         yaxis_title="",
+#         xaxis_title="",
+#     )
 
 
-def write_image(fig, path, fig_height=350):
-    """Write an image for a plotly figure to a path while applying common styling."""
-    # Create a new figure object
-    fig = Figure(fig)
-    # Update font size for print
-    fig.update_layout(
-        height=fig_height,
-        legend_font_size=10,
-        title=dict(
-            font=dict(
-                size=12,
-            )
-        ),
-    )
-    path = Path(path)
-    if not path.parent.exists():
-        path.parent.mkdir(parents=True, exist_ok=True)
-    fig.write_image(path, scale=4)
+# def write_image(fig, path, fig_height=350):
+#     """Write an image for a plotly figure to a path while applying common styling."""
+#     # Create a new figure object
+#     fig = Figure(fig)
+#     # Update font size for print
+#     fig.update_layout(
+#         height=fig_height,
+#         legend_font_size=10,
+#         title=dict(
+#             font=dict(
+#                 size=12,
+#             )
+#         ),
+#     )
+#     path = Path(path)
+#     if not path.parent.exists():
+#         path.parent.mkdir(parents=True, exist_ok=True)
+#     fig.write_image(path, scale=4)
 ```
 
 ```{code-cell} ipython3
@@ -448,53 +448,53 @@ slideshow:
   slide_type: ''
 tags: [remove-input]
 ---
-# Historical query for the last 18 months through the next 6 months
-today = datetime.datetime.today()
-date_past = round_to_nearest_month(today - datetime.timedelta(days=30 * 18))
-date_future = round_to_nearest_month(today + datetime.timedelta(days=30 * 6))
+# # Historical query for the last 18 months through the next 6 months
+# today = datetime.datetime.today()
+# date_past = round_to_nearest_month(today - datetime.timedelta(days=30 * 18))
+# date_future = round_to_nearest_month(today + datetime.timedelta(days=30 * 6))
 
-# Query for date range
-qu_date = f"Date > '{date_past:%Y-%m-%d}' and Date < '{date_future:%Y-%m-%d}'"
+# # Query for date range
+# qu_date = f"Date > '{date_past:%Y-%m-%d}' and Date < '{date_future:%Y-%m-%d}'"
 
-# Query to remove prospective entries
-prospect_values = set(ii for ii in leads["Engagement Type"] if "projected" in ii.lower())
-qu_prospect = "`Engagement Type` not in @prospect_values"
+# # Query to remove prospective entries
+# prospect_values = set(ii for ii in leads["Engagement Type"] if "projected" in ii.lower())
+# qu_prospect = "`Engagement Type` not in @prospect_values"
 
-# Colors that help with plotting
-colors = {
-    "Core funding": twoc.colors["bigblue"],
-    "Partnership": twoc.colors["mauve"],
-    "Hub service": twoc.colors["coral"],
-    "Needs admin": "#ffa8a9",
-    "Projected renewal": "grey",
-    "Projected core funding": "darkgrey",
-    "Projected new contract": "lightgrey",
-}
+# # Colors that help with plotting
+# colors = {
+#     "Core funding": twoc.colors["bigblue"],
+#     "Partnership": twoc.colors["mauve"],
+#     "Hub service": twoc.colors["coral"],
+#     "Needs admin": "#ffa8a9",
+#     "Projected renewal": "grey",
+#     "Projected core funding": "darkgrey",
+#     "Projected new contract": "lightgrey",
+# }
 
-# Generate the plot
-figservice = px.bar(
-    amortized_records.query(qu_date).query(qu_prospect),
-    x="Date",
-    y="Monthly amount",
-    color="Engagement Type",
-    category_orders={"Engagement Type": colors.keys()},
-    color_discrete_map=colors,
-    hover_data="Name",
-    title="Monthly Revenue by Type",
-)
-figservice.update_traces(marker_line_width=0.2)
-figservice.add_scatter(
-    x=costs.query(qu_date)["Date"],
-    y=costs.query(qu_date)["Monthly cost (no FSP)"],
-    mode="lines",
-    line_shape="hv",
-    line_width=4,
-    line_color="black",
-    name="Costs",
-)
-update_layout(figservice)
-write_image(figservice, "_build/images/service_type.png")
-figservice
+# # Generate the plot
+# figservice = px.bar(
+#     amortized_records.query(qu_date).query(qu_prospect),
+#     x="Date",
+#     y="Monthly amount",
+#     color="Engagement Type",
+#     category_orders={"Engagement Type": colors.keys()},
+#     color_discrete_map=colors,
+#     hover_data="Name",
+#     title="Monthly Revenue by Type",
+# )
+# figservice.update_traces(marker_line_width=0.2)
+# figservice.add_scatter(
+#     x=costs.query(qu_date)["Date"],
+#     y=costs.query(qu_date)["Monthly cost (no FSP)"],
+#     mode="lines",
+#     line_shape="hv",
+#     line_width=4,
+#     line_color="black",
+#     name="Costs",
+# )
+# update_layout(figservice)
+# write_image(figservice, "_build/images/service_type.png")
+# figservice
 ```
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}}
@@ -516,51 +516,51 @@ slideshow:
   slide_type: ''
 tags: [remove-input]
 ---
-# Query for three months into the past through 12 months into the future
-date_past = round_to_nearest_month(today - datetime.timedelta(days=30 * 3))
-date_future = round_to_nearest_month(today + datetime.timedelta(days=30 * 12))
-qu_date = f"Date >= '{date_past:%Y-%m-%d}' and Date <= '{date_future:%Y-%m-%d}'"
+# # Query for three months into the past through 12 months into the future
+# date_past = round_to_nearest_month(today - datetime.timedelta(days=30 * 3))
+# date_future = round_to_nearest_month(today + datetime.timedelta(days=30 * 12))
+# qu_date = f"Date >= '{date_past:%Y-%m-%d}' and Date <= '{date_future:%Y-%m-%d}'"
 
-for iname in ["Monthly amount (weighted)", "Monthly amount"]:
-    # Bar plot of revenue
-    data_plot = amortized_records.query(qu_date)
-    if iname == "Monthly amount":
-        # If we are using total amount, only use records with > 25% chance success
-        data_plot = data_plot.query("`% success` > .25")
+# for iname in ["Monthly amount (weighted)", "Monthly amount"]:
+#     # Bar plot of revenue
+#     data_plot = amortized_records.query(qu_date)
+#     if iname == "Monthly amount":
+#         # If we are using total amount, only use records with > 25% chance success
+#         data_plot = data_plot.query("`% success` > .25")
 
-    figservice = px.bar(
-        data_plot,
-        x="Date",
-        y=iname,
-        color="Engagement Type",
-        category_orders={"Engagement Type": colors.keys()},
-        color_discrete_map=colors,
-        hover_name="Name",
-        hover_data={
-            "Monthly amount": ":$,.0f",
-            "Monthly amount (weighted)": ":$,.0f",
-            "Total amount": ":$,.0f",
-            "% success": ":%.0f",
-        },
-        title=(
-            "Monthly Revenue (weighted)"
-            if "weighted" in iname
-            else "Monthly Revenue if contracts over 50% chance are awarded"
-        ),
-    )
-    figservice.update_traces(marker_line_width=0.2)
+#     figservice = px.bar(
+#         data_plot,
+#         x="Date",
+#         y=iname,
+#         color="Engagement Type",
+#         category_orders={"Engagement Type": colors.keys()},
+#         color_discrete_map=colors,
+#         hover_name="Name",
+#         hover_data={
+#             "Monthly amount": ":$,.0f",
+#             "Monthly amount (weighted)": ":$,.0f",
+#             "Total amount": ":$,.0f",
+#             "% success": ":%.0f",
+#         },
+#         title=(
+#             "Monthly Revenue (weighted)"
+#             if "weighted" in iname
+#             else "Monthly Revenue if contracts over 50% chance are awarded"
+#         ),
+#     )
+#     figservice.update_traces(marker_line_width=0.2)
 
-    # Dotted line plot of costs
-    figservice.add_scatter(
-        x=costs.query(qu_date)["Date"],
-        y=costs.query(qu_date)["Monthly cost (no FSP)"],
-        mode="lines",
-        line_shape="hv",
-        line_dash="dash",
-        line_width=4,
-        line_color="black",
-        name="Costs",
-    )
-    update_layout(figservice)
-    figservice.show()
+#     # Dotted line plot of costs
+#     figservice.add_scatter(
+#         x=costs.query(qu_date)["Date"],
+#         y=costs.query(qu_date)["Monthly cost (no FSP)"],
+#         mode="lines",
+#         line_shape="hv",
+#         line_dash="dash",
+#         line_width=4,
+#         line_color="black",
+#         name="Costs",
+#     )
+#     update_layout(figservice)
+#     figservice.show()
 ```
