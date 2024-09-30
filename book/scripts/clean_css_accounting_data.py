@@ -53,11 +53,14 @@ else:
     here = Path(".")
 
 # Take the first CSV file in the accounting folder
-path = list(Path(here / "../data/css-accounting/").glob("*.csv"))[-1]
-df = pd.read_csv(path, skiprows=6)
+path = list(Path(here / "../data/css-accounting/").glob("*.xlsx"))[-1]
+df = pd.read_excel(path, skiprows=6)
 
 # Quick renaming
-df = df.rename(columns={"Net (USD)": "Amount"})
+df = df.rename(columns={"Net (USD)": "Amount", "Account": "Category", "Account Type": "Category Type"})
+
+# Drop empty rows
+df = df.dropna(subset=["Description"])
 
 
 # -
@@ -65,75 +68,34 @@ df = df.rename(columns={"Net (USD)": "Amount"})
 # ## Munge the dataframe
 
 # +
-# Parse the amount column
-def parse_accounting_string(s):
-    if not isinstance(s, str):
-        # If not a string, just skip it
-        return
-    s = s.replace(',', '')  # Remove comma separators
-    s = s.strip()  # Remove leading/trailing whitespace
-    
-    if s.startswith('(') and s.endswith(')'):
-        # Handle parentheses for negative numbers
-        return -float(s[1:-1])
-    elif s.startswith('$'):
-        # Handle dollar sign
-        return float(s[1:])
-    else:
-        return float(s)
-df["Amount"] = df["Amount"].map(parse_accounting_string)
-
-# Remove category rows and add them as an entry
-dfnew = []
-active_category = None
-for ix, irow in df.iterrows():
-    if pd.isna(irow["Date"]) or irow["Date"].lower().startswith("Total"):
-        # If empty, just skip it
-        continue
-    elif pd.isna(irow["Source"]):
-        # If the source is empty, assume that it is a category and not a transaction
-        active_category = irow["Date"]
-    else:
-        # Add the active category
-        irow["Category"] = active_category
-        irow["Kind"] = "revenue" if "revenue" in active_category.lower() else "cost"
-        dfnew.append(irow)
-dfnew = pd.DataFrame(dfnew)
-
-
-# +
-# If we want to inspect it
-# ishow(dfnew)
-
-# +
 # Add major category for later use
 def clean_category(cat):
     # Extract the category string
     # Each entry has a form like:
-    #     NNNN - NNNN STRING
-    cat = cat.split(" ", 3)[-1]
+    #     NNNN STRING
+    cat = cat.split(" ", 1)[-1]
 
     # Return the major category
-    if any(ii in cat for ii in ["Other", "Revenue"]):
+    if any(ii in cat.lower() for ii in ["other", "revenue"]):
         return cat.split(":")[-1]
     else:
         return cat.split(":")[0]
-dfnew["Category Major"] = dfnew["Category"].map(clean_category)
+df["Category Major"] = df["Category"].map(clean_category)
 
 # Date type
-dfnew["Date"] = pd.to_datetime(dfnew["Date"])
+df["Date"] = pd.to_datetime(df["Date"])
 # -
 
 # ## Save to CSV for upload
 #
 
 # Create a new CSV that we'll use
-newpath = path.parent / (path.stem + "-cleaned" + path.suffix)
-dfnew.to_csv(newpath, index=False)
+newpath = path.parent / (path.stem + "-cleaned.csv")
+df.to_csv(newpath, index=False)
 
 # ## Visualize
 
-for kind, idata in dfnew.groupby("Kind"):
+for kind, idata in df.groupby("Category Type"):
     monthly = idata.groupby("Category Major").resample("ME", on="Date").sum()["Amount"].reset_index()
     totals = monthly.groupby("Date").sum("Amount")
     fig = px.line(monthly, x="Date", y="Amount", color="Category Major", height=600, title=f"Monthly {kind}")
