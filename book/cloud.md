@@ -202,7 +202,9 @@ for ix, irow in communities.iterrows():
     hubs = df.query("clusterhub in @clusterhub and timescale == 'monthly'")
     n_users = hubs.groupby("clusterhub").mean("users")["users"].sum().round()
     communities.loc[ix, "users"] = n_users
-    
+
+# Rename Lattitude and Longitude to be easier to work with
+communities = communities.rename(columns={"Lattitude": "lat", "Longitude": "lon"})
 ```
 
 ```{code-cell} ipython3
@@ -212,58 +214,6 @@ slideshow:
   slide_type: ''
 tags: [remove-cell]
 ---
-def geocode(city_name):
-    """A simpler geocoder that uses the openstreetmaps API.
-
-    We used to use geopy, but it is unmaintained and their geocoder
-    broke, so this should be more reliable.
-    """
-
-    
-    base_url = "https://nominatim.openstreetmap.org/search"
-    params = {
-        "q": city_name,
-        "format": "json",
-        "limit": 1
-    }
-    headers = {
-        "User-Agent": "YourAppName/1.0"  # Replace with your app name
-    }
-    
-    response = requests.get(base_url, params=params, headers=headers)
-    data = response.json()
-    
-    if data:
-        return float(data[0]["lat"]), float(data[0]["lon"])
-    else:
-        return None
-
-# Geocode each city so we can plot it on a map
-path_locations = Path("./data/city-locations.csv")
-if not path_locations.exists():
-    unique_locations = communities["Location"].unique()
-    located = []
-    for location in track(unique_locations):
-        lat, lon = geocode(unique_locations)
-        located.append([location, lat, lon])
-    located = pd.DataFrame(located, columns=["Location", "lat", "lon"])
-
-    # Save for future use
-    located.to_csv(path_locations, index=False)
-else:
-    located = pd.read_csv(path_locations, index_col=False)
-```
-
-```{code-cell} ipython3
----
-editable: true
-slideshow:
-  slide_type: ''
-tags: [remove-cell]
----
-# Merge location information with our communities based on city name
-communities = pd.merge(located, communities, "outer", "Location")
-
 # Drop any records without users because these aren't valid
 missing_records = communities["users"].isnull()
 print(f"Dropping {missing_records.sum()} records with missing users...")
