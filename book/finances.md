@@ -16,6 +16,11 @@ kernelspec:
 
 # Revenue projections
 
+:::{admonition} BROKEN DUE TO TABLE CHANGES
+Our sales airtable has changed and we must update it to the new structure.
+See https://github.com/2i2c-org/kpis/issues/51 for tracking issue.
+:::
+
 This document shows 2i2c's historical revenue data by contract, and predicts 2i2c's monthly income along with its costs using data from our [Leads AirTable](https://airtable.com/appbjBTRIbgRiElkr/tblmRU6U53i8o7z2I/viw8xzzSXk8tPwBho?blocks=hide), which also pulls in data from our [Contracts AirTable](https://airtable.com/appbjBTRIbgRiElkr/tbliwB70vYg3hlkb1/viwWPJhcFbXUJZUO6?blocks=hide).
 
 When built via Jupyter Book, all leads are anonymized.
@@ -183,7 +188,8 @@ column_mappings = {
     # The end date of the contract or the lead depending on what's there
     "End Date (final)": "End Date",
 }
-fundraising = pd.read_csv("./data/airtable-fundraising.csv", usecols=column_mappings.keys())
+# TODO: BROKEN: The column names have changed and we must change them
+fundraising = pd.read_csv("./data/airtable-sales.csv", usecols=column_mappings.keys())
 fundraising = fundraising.rename(columns=column_mappings)
 
 # Quick clean up
