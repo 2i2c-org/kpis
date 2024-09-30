@@ -39,14 +39,14 @@ views = [
     ("accounting", "appbjBTRIbgRiElkr", "tblNjmVbPaVmC7wc3", "viw1daKSu2dTcd5lg"),
     ("contracts", "appbjBTRIbgRiElkr", "tbliwB70vYg3hlkb1", "viwWPJhcFbXUJZUO6"),
     ("leads", "appbjBTRIbgRiElkr", "tblmRU6U53i8o7z2I", "viw8xzzSXk8tPwBho"),
-    ("fundraising", "appbjBTRIbgRiElkr", "tblM9Fv7J4Nl4c0L3", "viwtUpulzqMmqkxsJ"),
+    ("sales", "appbjBTRIbgRiElkr", "tblBTPDI1nKoq8wOL", "viwcsrE83taP6GhSl"),
 ]
 ## Load in airtable
 api = Api(api_key)
 for (name, base_id, table_id, view_id) in views:
+    print(f"Downloading {name} AirTable data from https://airtable.com/{base_id}/{table_id}/{view_id}...")
     table = api.table(base_id, table_id)
     records = table.all(view=view_id)
-    print(f"Downloading AirTable data from https://airtable.com/{base_id}/{table_id}/{view_id}...")
     # Add the AirTable ID for easy indexing later
     data = [r["fields"] | {"aid": r["id"]} for r in records]
     df = pd.DataFrame.from_records(data)

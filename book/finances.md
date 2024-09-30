@@ -16,6 +16,10 @@ kernelspec:
 
 # Revenue projections
 
+:::{admonition} Not currently working
+We're updating our sales CRM and this page has not yet been updated to match it.
+:::
+
 This document shows 2i2c's historical revenue data by contract, and predicts 2i2c's monthly income along with its costs using data from our [Leads AirTable](https://airtable.com/appbjBTRIbgRiElkr/tblmRU6U53i8o7z2I/viw8xzzSXk8tPwBho?blocks=hide), which also pulls in data from our [Contracts AirTable](https://airtable.com/appbjBTRIbgRiElkr/tbliwB70vYg3hlkb1/viwWPJhcFbXUJZUO6?blocks=hide).
 
 When built via Jupyter Book, all leads are anonymized.
@@ -171,19 +175,19 @@ tags: [remove-cell]
 # Read in latest fundraising data from AirTable
 column_mappings = {
     # Unique name
-    "Name": "Name",
+    "Opportunity Name": "Name",
     # Status of the lead
-    "Status": "Status",
+    "Status": "Stage",
     # The total amount for 2i2c after subtracting the FSP fee
-    "2i2c spendable amount": "Amount for 2i2c",
+    "Opportunity Value": "Amount for 2i2c",
     # The chance that we'll get this award
-    "% probability of success": "% success",
+    "Probability Success": "% success",
     # The start date of the contract or the lead depending on what's there
-    "Start Date (final)": "Start Date",
+    "Target start date": "Start Date",
     # The end date of the contract or the lead depending on what's there
-    "End Date (final)": "End Date",
+    "Target end date": "End Date",
 }
-fundraising = pd.read_csv("./data/airtable-fundraising.csv", usecols=column_mappings.keys())
+fundraising = pd.read_csv("./data/airtable-sales.csv", usecols=column_mappings.keys())
 fundraising = fundraising.rename(columns=column_mappings)
 
 # Quick clean up
