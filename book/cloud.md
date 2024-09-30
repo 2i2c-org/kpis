@@ -183,17 +183,19 @@ tags: [remove-cell]
 # Load the latest AirTable data
 communities = pd.read_csv("./data/airtable-communities.csv")
 
-# Drop communities that are missing location/hubs/domains from hubs
-communities = communities.dropna(subset=["Location", "Hubs", "domain (from Hubs)"])
-
 # Clean up a bit
 communities = communities.rename(columns={"domain (from Hubs)": "domain"})
-communities["domain"] = communities["domain"].map(lambda a: eval(a))
+
+# Drop communities that are missing location/hubs/domains from hubs
+communities = communities.dropna(subset=["Location", "Hubs", "domain"])
+for col in ["id", "domain", "Location"]:
+    communities[col] = communities[col].map(lambda a: eval(a))
+communities["Location"] = communities["Location"].map(lambda a: a[0])
 
 # Calculate the number of users for each hub
 for ix, irow in communities.iterrows():
     clusters = eval(irow["cluster"])
-    hubs = eval(irow["id"])
+    hubs = irow["id"]
     clusterhub = [f"{a}/{b}" for a, b in zip(clusters, hubs)]
 
     # Grab the average number of monthly users for this community across all clusters/hubs
@@ -202,9 +204,15 @@ for ix, irow in communities.iterrows():
     hubs = df.query("clusterhub in @clusterhub and timescale == 'monthly'")
     n_users = hubs.groupby("clusterhub").mean("users")["users"].sum().round()
     communities.loc[ix, "users"] = n_users
+```
+
+```{code-cell} ipython3
+# Read in locations data and link it to our communities
+locations = pd.read_csv("./data/airtable-locations.csv")
+communities = pd.merge(communities, locations[["aid", "Latitude", "Longitude"]], left_on="Location", right_on="aid", how="left")
 
 # Rename Lattitude and Longitude to be easier to work with
-communities = communities.rename(columns={"Lattitude": "lat", "Longitude": "lon"})
+communities = communities.rename(columns={"Latitude": "lat", "Longitude": "lon"})
 ```
 
 ```{code-cell} ipython3

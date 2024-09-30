@@ -35,6 +35,7 @@ if not api_key:
 #   airtable.com/{{ BASE ID }}/{{ TABLE ID }}/{{VIEW ID}}
 views = [
     ("communities", "appbjBTRIbgRiElkr", "tblYGygEo5PQBSUYt", "viw2F6xVWJujWKCuj"),
+    ("locations", "appbjBTRIbgRiElkr", "tblNiMH0gYRVhVdhE", "viwYjmYFRWWJnrv8Y"),
     ("accounting", "appbjBTRIbgRiElkr", "tblNjmVbPaVmC7wc3", "viw1daKSu2dTcd5lg"),
     ("contracts", "appbjBTRIbgRiElkr", "tbliwB70vYg3hlkb1", "viwWPJhcFbXUJZUO6"),
     ("leads", "appbjBTRIbgRiElkr", "tblmRU6U53i8o7z2I", "viw8xzzSXk8tPwBho"),
@@ -46,7 +47,9 @@ for (name, base_id, table_id, view_id) in views:
     table = api.table(base_id, table_id)
     records = table.all(view=view_id)
     print(f"Downloading AirTable data from https://airtable.com/{base_id}/{table_id}/{view_id}...")
-    df = pd.DataFrame.from_records((r["fields"] for r in records))
+    # Add the AirTable ID for easy indexing later
+    data = [r["fields"] | {"aid": r["id"]} for r in records]
+    df = pd.DataFrame.from_records(data)
     
     # %% [markdown]
     # Write to a CSV file (not checked into git)
