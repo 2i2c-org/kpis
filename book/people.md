@@ -70,10 +70,12 @@ import os
 import re
 from datetime import datetime, timedelta
 from json import loads
+from pathlib import Path
 from subprocess import run
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+from yaml import safe_load
 ```
 
 ```{code-cell} ipython3
@@ -103,6 +105,7 @@ def strip_ansi(text):
 
 
 json = loads(strip_ansi(out.stdout))
+team = safe_load(Path("data/team.yml").read_text())
 ```
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}, "tags": ["remove-cell"]}
@@ -126,8 +129,12 @@ start_cal = datetime(year=today.year, month=1, day=1)
 end_cal = datetime(year=today.year, month=12, day=31)
 
 # How many days we expect each person to accumulate by the end of our viz window
-num_days_to_be_on_target = int(((end_cal - start_cal).days / 365) * ANNUAL_EXPECTED_DAYS_OFF)
-days_expected_by_today = int(((today - start_cal).days / 365) * ANNUAL_EXPECTED_DAYS_OFF)
+num_days_to_be_on_target = int(
+    ((end_cal - start_cal).days / 365) * ANNUAL_EXPECTED_DAYS_OFF
+)
+days_expected_by_today = int(
+    ((today - start_cal).days / 365) * ANNUAL_EXPECTED_DAYS_OFF
+)
 ```
 
 ```{code-cell} ipython3
@@ -140,20 +147,28 @@ tags: [remove-cell]
 # Turn into dataframe
 df = pd.DataFrame(json["items"])
 
+
 # Light cleanup
 def extract_assignee(val):
     if isinstance(val, list):
         val = val[0]
     return val
+
+
 df["assignees"] = df["assignees"].map(extract_assignee)
 
-# Only keep time off for our window, 
+# Only keep time off for our window
+# Limit last day to the last day of the year
 date_cols = ["first day", "last day"]
 for col in date_cols:
     df.loc[:, col] = pd.to_datetime(df[col])
+df["last day"] = df["last day"].map(lambda a: np.min([a, end_cal]))
 
 # Drop entries with missing dates
 df = df.dropna(subset=["first day", "last day"])
+
+# Only keep entries for our current team
+df = df.query("assignees in @team")
 
 # Replace missing types with vacation
 df["type"] = df["type"].replace(pd.NA, "Vacation")
@@ -182,7 +197,14 @@ tags: [remove-input]
 ---
 import plotly_express as px
 
-df['last day plus one'] = df["last day"] + timedelta(days=1)
+df["last day plus one"] = df["last day"] + timedelta(days=1)
+
+# Calculate number of days off by generating a range of *business days* and counting the list.
+# This ensures we exclude weekends
+df["days_off"] = df.apply(
+    lambda a: len(pd.bdate_range(a["first day"], a["last day"])), axis=1
+)
+
 fig = px.timeline(
     df,
     x_start="first day",
@@ -190,7 +212,8 @@ fig = px.timeline(
     y="assignees",
     title="Days off over this calendar year",
     height=700,
-    color="type" 
+    color="type",
+    hover_data=["days_off"],
 )
 fig.update_xaxes(range=[start_cal, end_cal])
 fig.add_vline(pd.Timestamp.today())
@@ -229,14 +252,8 @@ slideshow:
   slide_type: ''
 tags: [remove-cell]
 ---
-# Calculate number of days off by generating a range of *business days* and counting the list.
-# This ensures we exclude weekends
-df["days_off"] = df.apply(
-    lambda a: len(pd.bdate_range(a["first day"], a["last day"])), axis=1
-)
-
 # Accumulate days off over each entry per person
-df_cumulative = df.query("(`first day` >= @start_cal) and (`last day` < @end_cal)")
+df_cumulative = df.query("(`first day` >= @start_cal)")
 cumulative = []
 for person, idata in df_cumulative.groupby("assignees"):
     # Add an entry for the first day of the period we visualize
@@ -261,7 +278,10 @@ tags: [remove-cell]
 ---
 # Calculate the "burn rate" of time off we'd expect if team members were hitting their 40 day target.
 expected = pd.DataFrame(
-    [{"day": start_cal, "amount": 0}, {"day": end_cal, "amount": num_days_to_be_on_target}],
+    [
+        {"day": start_cal, "amount": 0},
+        {"day": end_cal, "amount": num_days_to_be_on_target},
+    ],
 )
 expected["day"] = pd.to_datetime(expected["day"])
 ```
@@ -298,7 +318,7 @@ fig.add_trace(
     ).data[0]
 )
 fig.update_xaxes(range=[start_cal, end_cal])
-fig.update_yaxes(range=[0, 45])
+fig.update_yaxes(range=[0, 50])
 ```
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}}
@@ -314,13 +334,22 @@ Those with a `difference` value above 0 should take more days off!
 editable: true
 slideshow:
   slide_type: ''
-tags: [remove-cell]
+tags: [remove-input]
 ---
-time_off_so_far = cumulative.query("`first day` < @today").groupby("person").agg({"cumulative": "max"})
-time_off_so_far["expected"] = days_expected_by_today
-time_off_so_far["difference"] = time_off_so_far["expected"] - time_off_so_far["cumulative"]
-time_off_so_far["% of target"] = (time_off_so_far["cumulative"] / ANNUAL_EXPECTED_DAYS_OFF * 100).astype(int)
-time_off_so_far.sort_values("difference", ascending=False).style.format({"% of target": "{:.0f}%"})
+time_off_by_person = (
+    cumulative.query("`first day` < @today")
+    .groupby("person")
+    .agg({"cumulative": "max"})
+    .rename(columns={"cumulative": "taken"})
+)
+time_off_by_person["total"] = cumulative.groupby("person")[["cumulative"]].max()
+time_off_by_person["planned"] = time_off_by_person["total"] - time_off_by_person["taken"]
+time_off_by_person["difference planned vs annual target"] = (
+    ANNUAL_EXPECTED_DAYS_OFF - (time_off_by_person["taken"] + time_off_by_person["planned"])
+)
+time_off_by_person["difference taken vs expected by today"] = (
+    days_expected_by_today - time_off_by_person["taken"]
+)
 ```
 
 ```{code-cell} ipython3
@@ -330,14 +359,17 @@ slideshow:
   slide_type: ''
 tags: [remove-input]
 ---
-fig = px.histogram(
-    x=time_off_so_far["difference"],
-    nbins=20,
-    title='Difference between reported time off and amount expected to hit 40 days',
-    labels={'x': 'Days off difference'},  # Customize the x-axis label
-    width=700,
+sorted_names = time_off_by_person.sort_values("total").index.values
+fig = px.bar(
+    time_off_by_person.reset_index(),
+    y="person",
+    x=["taken", "planned"],
+    hover_data=["difference planned vs annual target", "difference taken vs expected by today"],
+    title="Planned time off (blue) compared with\nexpected time off by today (red) and annual target (black)",
+    category_orders={"person": sorted_names},
 )
-fig.add_vline(0, line_dash="dash")
+fig.add_vline(days_expected_by_today, line_color="red", line_dash="dash")
+fig.add_vline(ANNUAL_EXPECTED_DAYS_OFF, line_dash="dash")
 ```
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}}
