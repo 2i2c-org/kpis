@@ -89,7 +89,6 @@ tags: [remove-cell]
 cmd = "gh project item-list 39 --owner 2i2c-org -L 500 --format json"
 out = run(cmd.split(), text=True, capture_output=True, check=True)
 
-
 # Strip the output of all color codes and parse it as JSON, then a dataframe
 def strip_ansi(text):
     """
@@ -199,6 +198,13 @@ tags: [remove-input]
 import plotly_express as px
 
 df["last day plus one"] = df["last day"] + timedelta(days=1)
+
+# Calculate number of days off by generating a range of *business days* and counting the list.
+# This ensures we exclude weekends
+df["days_off"] = df.apply(
+    lambda a: len(pd.bdate_range(a["first day"], a["last day"])), axis=1
+)
+
 fig = px.timeline(
     df,
     x_start="first day",
@@ -207,6 +213,7 @@ fig = px.timeline(
     title="Days off over this calendar year",
     height=700,
     color="type",
+    hover_data=["days_off"],
 )
 fig.update_xaxes(range=[start_cal, end_cal])
 fig.add_vline(pd.Timestamp.today())
@@ -245,12 +252,6 @@ slideshow:
   slide_type: ''
 tags: [remove-cell]
 ---
-# Calculate number of days off by generating a range of *business days* and counting the list.
-# This ensures we exclude weekends
-df["days_off"] = df.apply(
-    lambda a: len(pd.bdate_range(a["first day"], a["last day"])), axis=1
-)
-
 # Accumulate days off over each entry per person
 df_cumulative = df.query("(`first day` >= @start_cal)")
 cumulative = []
@@ -341,12 +342,13 @@ time_off_by_person = (
     .agg({"cumulative": "max"})
     .rename(columns={"cumulative": "taken"})
 )
-time_off_by_person["planned"] = cumulative.groupby("person")[["cumulative"]].max()
-time_off_by_person["difference from annual target"] = (
-    ANNUAL_EXPECTED_DAYS_OFF - time_off_by_person["planned"]
+time_off_by_person["total"] = cumulative.groupby("person")[["cumulative"]].max()
+time_off_by_person["planned"] = time_off_by_person["total"] - time_off_by_person["taken"]
+time_off_by_person["difference planned vs annual target"] = (
+    ANNUAL_EXPECTED_DAYS_OFF - (time_off_by_person["taken"] + time_off_by_person["planned"])
 )
-time_off_by_person["difference from expected by today"] = (
-    days_expected_by_today - time_off_by_person["planned"]
+time_off_by_person["difference taken vs expected by today"] = (
+    days_expected_by_today - time_off_by_person["taken"]
 )
 ```
 
@@ -357,13 +359,13 @@ slideshow:
   slide_type: ''
 tags: [remove-input]
 ---
-sorted_names = time_off_by_person.sort_values("planned").index.values
+sorted_names = time_off_by_person.sort_values("total").index.values
 fig = px.bar(
     time_off_by_person.reset_index(),
     y="person",
-    x="planned",
-    hover_data=["difference from annual target", "difference from expected by today"],
-    title="Planned time off (blue) compared with expected time off by today (red) and annual target (black)",
+    x=["taken", "planned"],
+    hover_data=["difference planned vs annual target", "difference taken vs expected by today"],
+    title="Planned time off (blue) compared with\nexpected time off by today (red) and annual target (black)",
     category_orders={"person": sorted_names},
 )
 fig.add_vline(days_expected_by_today, line_color="red", line_dash="dash")
@@ -428,17 +430,4 @@ fig.add_trace(
 )
 fig.update_xaxes(range=[start_win, end_win])
 fig.update_yaxes(range=[0, 35])
-```
-
-```{code-cell} ipython3
----
-editable: true
-slideshow:
-  slide_type: ''
----
-
-```
-
-```{code-cell} ipython3
-
 ```
