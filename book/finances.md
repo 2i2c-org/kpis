@@ -225,6 +225,11 @@ for ix, irow in opportunities.iterrows():
         opportunities.loc[ix, "Weighted Value for 2i2c"] = irow["Value for 2i2c"]
     else:
         opportunities.loc[ix, "Category"] = f"{irow['Category']}-Prospective"
+
+# Ensure numeric values
+numeric_cols = ["Weighted Value for 2i2c", "Value for 2i2c"]
+for col in numeric_cols:
+    opportunities.loc[:, col] = opportunities.loc[:, col].astype(float)
 ```
 
 ```{code-cell} ipython3
@@ -374,7 +379,7 @@ qu_committed = f"`Stage` in ['Committed', 'Contract Admin']"
 colors = {
     "Services-Committed": twoc.colors["bigblue"],
     "Giving-Committed": twoc.colors["coral"],
-    "Giving-Prospective": "lightcoral"
+    "Giving-Prospective": "lightcoral",
     "Services-Prospective": "lightblue", 
 }
 
@@ -393,7 +398,7 @@ bar_kwargs = dict(
 
 
 figures = {}
-labels = ["estimated", "committed", "full", "categories"]
+labels = ["committed", "estimated", "full", "estimated (categories)"]
 for label in labels:
     # Bar plot of revenue
     data_plot = amortized_records.query(qu_date)
@@ -405,7 +410,7 @@ for label in labels:
     elif label == "estimated":
         iname = "Monthly amount (expected)"
         title = "Monthly Revenue (weighted by probability success)"
-    elif label == "categories":
+    elif "categories" in label:
         data_plot = data_plot.groupby(["Date", "Category"]).sum("Monthly amount (expected)")
         data_plot = data_plot.reset_index()
         data_plot["Name"] = data_plot["Category"]
@@ -454,4 +459,8 @@ for ii, ilabel in enumerate(labels):
 
 # Display the tab widget
 display(tabs)
+```
+
+```{code-cell} ipython3
+
 ```
