@@ -109,8 +109,7 @@ def convert_column_string_to_object(string):
 
 ## Costs
 
-Costs are manually calculated for now from [this Google Sheet](https://docs.google.com/spreadsheets/d/1OpKfPSIiFTY28OkV6--MhZygvdLVSdmpagjlnge2ELc/edit?usp=sharing). Monthly costs are calculated from the table below.
-We'll define a baseline cost as the average over the last three months of this table.
+Costs are manually calculated for now from [this Google Sheet](https://docs.google.com/spreadsheets/d/1OpKfPSIiFTY28OkV6--MhZygvdLVSdmpagjlnge2ELc/edit?usp=sharing). These **exclude our Fiscal Sponsor Fee** (because this fee is already subtracted from revenue projections below).
 
 ```{code-cell} ipython3
 ---
@@ -215,6 +214,8 @@ opportunities = opportunities.rename(columns=rename)
 
 # Convert probability to a %
 opportunities["Probability Success"] = opportunities["Probability Success"] / 5
+PROBABILITY_CUTOFF = .4
+opportunities = opportunities.query("`Probability Success` >= @PROBABILITY_CUTOFF")
 
 # Choose categories based on stage and category
 for ix, irow in opportunities.iterrows():
@@ -237,6 +238,16 @@ for col in numeric_cols:
 editable: true
 slideshow:
   slide_type: ''
+tags: [remove-input]
+---
+Markdown(f"Note: All projections **exclude opportunities with < %{PROBABILITY_CUTOFF*100:.0f} probability**.")
+```
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
 tags: [remove-cell]
 ---
 # If we want to look at the opportunities that were dropped
@@ -250,10 +261,11 @@ slideshow:
   slide_type: ''
 tags: [remove-input]
 ---
+# TURNING THIS OFF because we'll password-protect this page for now.
 # Anonymize opportunities if we are in a CI/CD environment because this will be public
-if "GITHUB_ACTION" in os.environ:
-    for ix, name in opportunities["Name"].items():
-        opportunities.loc[ix, "Name"] = f"Opportunity {ix}"
+# if "GITHUB_ACTION" in os.environ:
+#     for ix, name in opportunities["Name"].items():
+#         opportunities.loc[ix, "Name"] = f"Opportunity {ix}"
 ```
 
 ```{code-cell} ipython3
@@ -310,7 +322,7 @@ amortized_records = amortized_records.query("Date >= '2022-01-01'")
 amortized_records = amortized_records.sort_values("Monthly amount", ascending=False)
 ```
 
-+++ {"editable": true, "slideshow": {"slide_type": ""}}
++++ {"editable": true, "slideshow": {"slide_type": ""}, "user_expressions": [{"expression": "PROBABILITY_CUTOFF", "result": {"status": "ok", "data": {"text/plain": "0.4"}, "metadata": {}}}]}
 
 ## Budget projections
 
@@ -336,7 +348,6 @@ legend_orientation = dict(
     xanchor="center",
     x=0.5,
 )
-
 
 def update_layout(fig):
     fig.update_layout(
@@ -398,15 +409,14 @@ bar_kwargs = dict(
 
 
 figures = {}
-labels = ["committed", "estimated", "full", "estimated (categories)"]
+labels = ["committed", "estimated", "full", "estimated by category"]
 for label in labels:
     # Bar plot of revenue
     data_plot = amortized_records.query(qu_date)
     if label == "full":
         # If we are using total amount, only use records with >= 40% chance success
-        data_plot = data_plot.query("`Probability Success` >= .4")
         iname = "Monthly amount"
-        title = "Monthly Revenue if contracts >= 40% chance are awarded"
+        title = "Monthly Revenue (full contract revenue)"
     elif label == "estimated":
         iname = "Monthly amount (expected)"
         title = "Monthly Revenue (weighted by probability success)"
