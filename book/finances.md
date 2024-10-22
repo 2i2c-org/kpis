@@ -47,7 +47,7 @@ This notebook tries to use the _most accurate data that we've got_.
 For example, contracts are usually more accurate than opportunities.
 For data about dates and $$ amounts, here's the logic we follow:
 
-1. {kbd}`Amount (from Contract)`. If we have a contract with CS&S for this Lead, use this.
+1. {kbd}`Amount (from Contract)`. If we have a contract with CS&S for this opportunity, use this.
 2. {kbd}`Amount (from Opportunities)`. If we have no contract, use our opportunities airtable for a best estimate.
 :::
 
@@ -292,7 +292,7 @@ slideshow:
   slide_type: ''
 tags: [remove-cell]
 ---
-# Generate a month entry for each lead with its amortized monthly amount
+# Generate a month entry for each opportunity with its amortized monthly amount
 amortized_records = []
 
 for ix, irow in opportunities.iterrows():
@@ -326,12 +326,12 @@ amortized_records = amortized_records.sort_values("Monthly amount", ascending=Fa
 
 ## Budget projections
 
-The following plots show our revenue projections under different sets of assumptions. They go 12 months into the future.
+The following plots show our revenue projections under different sets of assumptions. They go 18 months into the future.
 There are three key figures, described below.
 
-1. Our **weighted projected revenue** where opportunity totals are weighted by their expected probability.
-2. Our **committed revenue** which only includes opportunities with an active contract or awaiting contracting.
-3. Our **best-case scenario total revenue** which reflects revenue if every lead is successful.
+1. Our **committed revenue** which only includes opportunities with an active contract or awaiting contracting.
+2. Our **estimated revenue** where opportunity totals are weighted by their expected probability.
+3. Our **best-case scenario revenue** which reflects revenue if every opportunity is successful.
 
 ```{code-cell} ipython3
 ---
@@ -377,10 +377,10 @@ def write_image(fig, path, fig_height=350):
         path.parent.mkdir(parents=True, exist_ok=True)
     fig.write_image(path, scale=4)
 
-# Historical query for the last 2 months through the next 12 months
+# Historical query for the last 2 months through the next 18 months
 today = datetime.datetime.today()
 date_past = round_to_nearest_month(today - datetime.timedelta(days=30 * 3))
-date_future = round_to_nearest_month(today + datetime.timedelta(days=30 * 12))
+date_future = round_to_nearest_month(today + datetime.timedelta(days=30 * 18))
 
 # Query for date range
 qu_date = f"Date >= '{date_past:%Y-%m-%d}' and Date < '{date_future:%Y-%m-%d}'"
