@@ -39,8 +39,10 @@ views = [
     ("accounting", "appbjBTRIbgRiElkr", "tblNjmVbPaVmC7wc3", "viw1daKSu2dTcd5lg"),
     ("contracts", "appbjBTRIbgRiElkr", "tbliwB70vYg3hlkb1", "viwWPJhcFbXUJZUO6"),
     ("leads", "appbjBTRIbgRiElkr", "tblmRU6U53i8o7z2I", "viw8xzzSXk8tPwBho"),
+    ("opportunities", "appbjBTRIbgRiElkr", "tblBTPDI1nKoq8wOL", "viwuJxmlTnW1VZxIm"),
     ("sales", "appbjBTRIbgRiElkr", "tblBTPDI1nKoq8wOL", "viwcsrE83taP6GhSl"),
 ]
+
 ## Load in airtable
 api = Api(api_key)
 for (name, base_id, table_id, view_id) in views:
