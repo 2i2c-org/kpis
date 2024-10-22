@@ -322,7 +322,7 @@ amortized_records = amortized_records.query("Date >= '2022-01-01'")
 amortized_records = amortized_records.sort_values("Monthly amount", ascending=False)
 ```
 
-+++ {"editable": true, "slideshow": {"slide_type": ""}, "user_expressions": [{"expression": "PROBABILITY_CUTOFF", "result": {"status": "ok", "data": {"text/plain": "0.4"}, "metadata": {}}}]}
++++ {"editable": true, "slideshow": {"slide_type": ""}}
 
 ## Budget projections
 
@@ -420,7 +420,7 @@ for label in labels:
     elif label == "estimated":
         iname = "Monthly amount (expected)"
         title = "Monthly Revenue (weighted by probability success)"
-    elif "categories" in label:
+    elif "category" in label:
         data_plot = data_plot.groupby(["Date", "Category"]).sum("Monthly amount (expected)")
         data_plot = data_plot.reset_index()
         data_plot["Name"] = data_plot["Category"]
@@ -469,8 +469,4 @@ for ii, ilabel in enumerate(labels):
 
 # Display the tab widget
 display(tabs)
-```
-
-```{code-cell} ipython3
-
 ```
