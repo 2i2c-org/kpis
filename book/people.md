@@ -106,6 +106,7 @@ def strip_ansi(text):
 
 json = loads(strip_ansi(out.stdout))
 team = safe_load(Path("data/team.yml").read_text())
+team = [ii.lower() for ii in team]
 ```
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}, "tags": ["remove-cell"]}
@@ -147,14 +148,12 @@ tags: [remove-cell]
 # Turn into dataframe
 df = pd.DataFrame(json["items"])
 
-
-# Light cleanup
+# Extract assignees as strings instead of lists
 def extract_assignee(val):
     if isinstance(val, list):
         val = val[0]
-    return val
-
-
+    return val.lower()
+df = df.dropna(subset=["assignees"])
 df["assignees"] = df["assignees"].map(extract_assignee)
 
 # Only keep time off for our window
