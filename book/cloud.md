@@ -207,6 +207,9 @@ for ix, irow in communities.iterrows():
 ```
 
 ```{code-cell} ipython3
+---
+tags: [remove-cell]
+---
 # Read in locations data and link it to our communities
 locations = pd.read_csv("./data/airtable-locations.csv")
 communities = pd.merge(communities, locations[["aid", "Latitude", "Longitude"]], left_on="Location", right_on="aid", how="left")
