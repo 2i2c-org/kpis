@@ -11,6 +11,8 @@ myst-nb
 pandas
 plotly_express
 pyairtable
+# Pydantic needs to be pinned for pyairtable, see issue: https://github.com/gtalarico/pyairtable/issues/411
+pydantic~=2.9.1
 pyarrow
 rich
 shapely
