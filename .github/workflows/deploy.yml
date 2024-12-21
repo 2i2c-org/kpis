@@ -63,10 +63,11 @@ jobs:
         run: python book/scripts/download_grafana_activity.py
 
       # Download the latest GitHub data
-      - name: Download latest Github data
-        run: python book/scripts/download_github_data.py
-        env:
-          TOKEN_GITHUB_READONLY: ${{ secrets.TOKEN_GITHUB_API_READONLY }}
+      # TODO: This is currently broken and we're disabling it so that it doesn't block updates.
+      # - name: Download latest Github data
+      #   run: python book/scripts/download_github_data.py
+      #   env:
+      #     TOKEN_GITHUB_READONLY: ${{ secrets.TOKEN_GITHUB_API_READONLY }}
 
       # Build the site
       - name: Build the Sphinx site
