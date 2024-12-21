@@ -14,6 +14,10 @@ kernelspec:
 
 # Upstream community activity
 
+:::{admonition} Not working!
+This page is disabled because GitHub's GraphQL API changed how scraping activity works.
+:::
+
 This is a short visualization of the 2i2c team's activity in upstream repositories. Its goal is to give a high level indication of where we're spending our time in key upstream communities.
 
 Last updated: **{sub-ref}`today`**
