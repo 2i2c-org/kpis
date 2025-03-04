@@ -92,7 +92,7 @@ jobs:
 
       # Upload to GH Pages
       - name: Upload artifact for GH pages
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v3
         if: always()
         with:
           # Upload the HTML folder
@@ -100,10 +100,10 @@ jobs:
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v4
 
-      #- name: Upload Logs and Build
-      #  uses: actions/upload-artifact@v4
-      #  with:
-      #    name: sphinx-logs
-      #   path: book/_build
+      - name: Upload Logs and Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: sphinx-logs
+         path: book/_build
