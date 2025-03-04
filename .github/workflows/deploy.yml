@@ -106,4 +106,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sphinx-logs
-         path: book/_build
+          path: book/_build
