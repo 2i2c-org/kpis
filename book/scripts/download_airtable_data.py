@@ -36,7 +36,7 @@ if not api_key:
 views = [
     ("communities", "appbjBTRIbgRiElkr", "tblYGygEo5PQBSUYt", "viw2F6xVWJujWKCuj"),
     ("locations", "appbjBTRIbgRiElkr", "tblNiMH0gYRVhVdhE", "viwYjmYFRWWJnrv8Y"),
-    ("accounting", "appbjBTRIbgRiElkr", "tblNjmVbPaVmC7wc3", "viw1daKSu2dTcd5lg"),
+    # ("accounting", "appbjBTRIbgRiElkr", "tblNjmVbPaVmC7wc3", "viw1daKSu2dTcd5lg"),  # This table was deleted, so removing it for now
     ("contracts", "appbjBTRIbgRiElkr", "tbliwB70vYg3hlkb1", "viwWPJhcFbXUJZUO6"),
     ("leads", "appbjBTRIbgRiElkr", "tblmRU6U53i8o7z2I", "viw8xzzSXk8tPwBho"),
     ("opportunities", "appbjBTRIbgRiElkr", "tblBTPDI1nKoq8wOL", "viwuJxmlTnW1VZxIm"),
@@ -46,17 +46,21 @@ views = [
 ## Load in airtable
 api = Api(api_key)
 for (name, base_id, table_id, view_id) in views:
-    table = api.table(base_id, table_id)
-    records = table.all(view=view_id)
-    print(f"Downloading AirTable data from https://airtable.com/{base_id}/{table_id}/{view_id}...")
-    # Add the AirTable ID for easy indexing later
-    data = [r["fields"] | {"aid": r["id"]} for r in records]
-    df = pd.DataFrame.from_records(data)
-    
-    # %% [markdown]
-    # Write to a CSV file (not checked into git)
-    
-    # %%
-    out_file = Path(here / f"../data/airtable-{name}.csv")
-    df.to_csv(out_file, index=False)
+    try:
+        url = f"https://airtable.com/{base_id}/{table_id}/{view_id}"
+        print(f"Downloading AirTable data from {url}...")
+        table = api.table(base_id, table_id)
+        records = table.all(view=view_id)
+        # Add the AirTable ID for easy indexing later
+        data = [r["fields"] | {"aid": r["id"]} for r in records]
+        df = pd.DataFrame.from_records(data)
+        
+        # %% [markdown]
+        # Write to a CSV file (not checked into git)
+        
+        # %%
+        out_file = Path(here / f"../data/airtable-{name}.csv")
+        df.to_csv(out_file, index=False)
+    except Exception as ee:
+        print(f"Error downloading URL:\n\n{url}\n\n{ee}")
 print(f"Finished downloading latest AirTable community data to {out_file.resolve().parent}")

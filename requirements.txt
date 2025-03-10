@@ -1,4 +1,5 @@
 # To run the code
+jupyter-book>=2.0.0a0
 altair
 geopandas
 ghapi
@@ -7,7 +8,6 @@ ipywidgets
 kaleido  # for image export with plotly
 linkify-it-py
 matplotlib
-myst-nb
 pandas
 plotly_express
 pyairtable
@@ -16,9 +16,6 @@ pydantic~=2.9.1
 pyarrow
 rich
 shapely
-git+https://github.com/2i2c-org/sphinx-2i2c-theme
-sphinx-design
-sphinx-togglebutton
 tomlkit
 vega_datasets
 
