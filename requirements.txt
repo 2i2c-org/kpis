@@ -1,12 +1,16 @@
-# To run the code
+# Core book dependencies
 jupyter-book
+sphinx_2i2c_theme
+github-activity
+linkify-it-py
+tomlkit
+
+# To run the code
 altair
 geopandas
 ghapi
-github-activity
 ipywidgets
 kaleido  # for image export with plotly
-linkify-it-py
 matplotlib
 pandas
 plotly_express
@@ -16,7 +20,6 @@ pydantic~=2.9.1
 pyarrow
 rich
 shapely
-tomlkit
 vega_datasets
 
 # For developing
