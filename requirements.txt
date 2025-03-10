@@ -1,6 +1,6 @@
 # Core book dependencies
 jupyter-book
-sphinx_2i2c_theme
+git+https://github.com/2i2c-org/sphinx-2i2c-theme
 github-activity
 linkify-it-py
 tomlkit
