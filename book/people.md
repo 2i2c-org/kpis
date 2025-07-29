@@ -111,6 +111,9 @@ team = [ii.lower() for ii in team]
 ```
 
 ```{code-cell} ipython3
+---
+tags: [remove-cell]
+---
 if len(json["items"]) == LIMIT_LENGTH:
     raise ValueError(f"Downloaded our max possible items ({LIMIT_LENGTH}), delete some items or increase the LIMIT_LENGTH for days off searches")
 ```
