@@ -33,7 +33,6 @@ jupytext
 
 # For loading grafana data
 python-dotenv
-dateparser
 prometheus-pandas
 
 # For downloading Google Sheets
