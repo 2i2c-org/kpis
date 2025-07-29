@@ -86,7 +86,8 @@ slideshow:
 tags: [remove-cell]
 ---
 # Use the GH CLI to print all of the records in our time off table
-cmd = "gh project item-list 39 --owner 2i2c-org -L 500 --format json"
+LIMIT_LENGTH = 1000
+cmd = f"gh project item-list 39 --owner 2i2c-org -L {LIMIT_LENGTH} --format json"
 out = run(cmd.split(), text=True, capture_output=True, check=True)
 
 # Strip the output of all color codes and parse it as JSON, then a dataframe
@@ -107,6 +108,11 @@ def strip_ansi(text):
 json = loads(strip_ansi(out.stdout))
 team = safe_load(Path("data/team.yml").read_text())
 team = [ii.lower() for ii in team]
+```
+
+```{code-cell} ipython3
+if len(json["items"]) == LIMIT_LENGTH:
+    raise ValueError(f"Downloaded our max possible items ({LIMIT_LENGTH}), delete some items or increase the LIMIT_LENGTH for days off searches")
 ```
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}, "tags": ["remove-cell"]}
