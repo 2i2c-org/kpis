@@ -171,6 +171,8 @@ import pandas as pd
 import plotly.express as px
 import numpy as np
 from plotly.express.colors import qualitative
+import plotly.io as pio
+pio.renderers.default = "notebook"
 ```
 
 ```{code-cell} ipython3

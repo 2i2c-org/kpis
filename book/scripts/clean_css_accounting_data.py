@@ -39,7 +39,7 @@
 
 # ## Load data
 
-import plotly_express as px
+import plotly.express as px
 import pandas as pd
 from pathlib import Path
 from os import environ

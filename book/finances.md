@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.4
+    jupytext_version: 1.17.2
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -65,7 +65,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import plotly_express as px
+import plotly.express as px
 
 # Apply 2i2c default styles
 import twoc
@@ -77,8 +77,9 @@ from plotly.subplots import make_subplots
 import ipywidgets as widgets
 from IPython.display import display
 
-
 twoc.set_plotly_defaults()
+import plotly.io as pio
+pio.renderers.default = "notebook"
 
 # This just suppresses a warning
 pd.set_option("future.no_silent_downcasting", True)
