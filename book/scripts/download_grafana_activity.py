@@ -25,7 +25,7 @@ import requests
 from pathlib import Path
 from textwrap import dedent
 from dotenv import load_dotenv
-from dateparser import parse as dateparser_parse
+from datetime import datetime, timedelta
 from prometheus_pandas.query import Prometheus
 import pandas as pd
 from rich.progress import track
@@ -140,8 +140,8 @@ if not path_activity.exists():
                 )
                 iactivity = prometheus.query_range(
                     query,
-                    dateparser_parse("12 months ago"),
-                    dateparser_parse("now"),
+                    datetime.today() - timedelta(days=365),
+                    datetime.today(),
                     "1d",
                 )
                 # Extract hub name from the brackets
@@ -164,7 +164,7 @@ if not path_activity.exists():
 
                 # Add to our list so that we concatenate across all clusters
                 activity.append(iactivity)
-            except Exception:
+            except Exception as e:
                 errors.append((uid, idata["name"].squeeze()))
 
     # Convert into a DF and do a little munging
