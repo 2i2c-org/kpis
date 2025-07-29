@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.7
+    jupytext_version: 1.17.2
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -194,7 +194,9 @@ slideshow:
   slide_type: ''
 tags: [remove-input]
 ---
-import plotly_express as px
+import plotly.io as pio
+import plotly.express as px
+pio.renderers.default = "notebook"
 
 df["last day plus one"] = df["last day"] + timedelta(days=1)
 
