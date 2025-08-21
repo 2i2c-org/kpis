@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.4
+    jupytext_version: 1.17.2
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -209,9 +209,8 @@ for ix, irow in communities.iterrows():
 ```
 
 ```{code-cell} ipython3
----
-tags: [remove-cell]
----
+:tags: [remove-cell]
+
 # Read in locations data and link it to our communities
 locations = pd.read_csv("./data/airtable-locations.csv")
 communities = pd.merge(communities, locations[["aid", "Latitude", "Longitude"]], left_on="Location", right_on="aid", how="left")
@@ -494,6 +493,77 @@ display(alt.hconcat(*chs_users, title=f"Total Active Users by community size"))
 display(alt.hconcat(*chs_perc, title=f"% {scale} Total Active Users by community size"))
 ```
 
-```{code-cell} ipython3
+### Date of First Value
 
++++
+
+When the number of Monthly Active Users (MAUs) >= 5, assume the community is actively using the their hub.
+
+```{code-cell} ipython3
+df['date'] = pd.to_datetime(df['date'])
+
+# Define cutoff = one year ago
+cutoff = pd.Timestamp.today() - pd.Timedelta(days=365)
+
+# Get all (cluster, hub) combos
+all_groups = df.groupby(['cluster', 'hub'])
+
+# Compute earliest date where users > 4
+first_dates = (
+    df[df['users'] > 4]
+    .groupby(['cluster', 'hub'])['date']
+    .min()
+    .reset_index()
+    .rename(columns={'date': 'first_value_date'})
+)
+
+# Merge back to include hubs with no qualifying rows
+result = (
+    all_groups.size()
+    .reset_index()
+    .merge(first_dates, on=['cluster', 'hub'], how='left')
+)
+
+# Apply logic
+def classify_date(d):
+    if pd.isna(d):
+        return "MAUs < 5"
+    elif d < cutoff:
+        return "More than 1 year ago"
+    else:
+        return d.strftime('%Y-%m-%d')
+
+result['first_value_date'] = result['first_value_date'].apply(classify_date)
+
+# Drop the helper column (the size)
+result = result[['cluster', 'hub', 'first_value_date']]
+```
+
+```{code-cell} ipython3
+import ipywidgets as widgets
+from IPython.display import display
+
+# Dropdown with unique clusters
+cluster_dropdown = widgets.Dropdown(
+    options=['All'] + sorted(result['cluster'].unique().tolist()),
+    description='Cluster:'
+)
+
+# Output area
+output = widgets.Output()
+
+def update_table(change):
+    with output:
+        output.clear_output()
+        if change['new'] == 'All':
+            display(result)
+        else:
+            display(result[result['cluster'] == change['new']])
+
+cluster_dropdown.observe(update_table, names='value')
+
+# Initial display
+display(cluster_dropdown)
+update_table({'new': 'All'})
+display(output)
 ```
