@@ -83,9 +83,15 @@ stats = pd.DataFrame({
     'weekly_average': monthly.values / 4.33
 })
 
+# Calculate percentage change from previous month
+stats['total_posts_pct_change'] = stats['total_posts'].pct_change() * 100
+stats['weekly_avg_pct_change'] = stats['weekly_average'].pct_change() * 100
+
 # Plot average weekly posts
 fig1 = px.bar(stats, x='month', y='weekly_average',
-              title='Average Weekly Blog Posts by Month (Last 12 Months)')
+              title='Average Weekly Blog Posts by Month (Last 12 Months)',
+              custom_data=['weekly_avg_pct_change'])
+fig1.update_traces(hovertemplate='<b>%{x}</b><br>Weekly Average: %{y:.2f}<br>Change from prev month: %{customdata[0]:.1f}%<extra></extra>')
 fig1.update_layout(xaxis_tickangle=-45, height=500)
 fig1.show()
 ```
@@ -103,7 +109,9 @@ tags: [remove-input]
 ---
 # Plot total posts per month
 fig2 = px.bar(stats, x='month', y='total_posts',
-              title='Total Blog Posts by Month (Last 12 Months)')
+              title='Total Blog Posts by Month (Last 12 Months)',
+              custom_data=['total_posts_pct_change'])
+fig2.update_traces(hovertemplate='<b>%{x}</b><br>Total Posts: %{y}<br>Change from prev month: %{customdata[0]:.1f}%<extra></extra>')
 fig2.update_layout(xaxis_tickangle=-45, height=500)
 fig2.show()
 ```
