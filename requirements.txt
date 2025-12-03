@@ -1,5 +1,5 @@
 # Core book dependencies
-jupyter-book
+jupyter-book<2
 git+https://github.com/2i2c-org/sphinx-2i2c-theme
 github-activity
 linkify-it-py

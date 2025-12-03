@@ -59,7 +59,8 @@ for item in root.findall('.//item'):
 
 # Create DataFrame and filter to last 12 months
 df = pd.DataFrame(posts)
-df['date'] = pd.to_datetime(df['date'])
+df['date'] = pd.to_datetime(df['date'], errors='coerce')
+df = df.dropna(subset=['date'])  # Remove rows with invalid dates
 cutoff = pd.Timestamp.now() - pd.DateOffset(months=12)
 recent_df = df[df['date'] >= cutoff]
 ```

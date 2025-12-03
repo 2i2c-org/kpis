@@ -61,6 +61,8 @@ from twoc import colors
 
 ## Load and munge data
 
+Raw data: {download}`data/hub-activity.csv`.
+
 ```{code-cell} ipython3
 ---
 editable: true
