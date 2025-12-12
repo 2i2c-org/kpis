@@ -13,12 +13,6 @@
 # ---
 
 # Download HubSpot deals data and cache it locally.
-#
-# This mirrors the data pulled by the `deals-gantt` dashboards so our notebooks
-# can run purely from cached JSON instead of hitting the HubSpot API directly.
-# To refresh the cache, run:
-#     python book/scripts/download_hubspot_data.py [--force]
-# Requires HUBSPOT_ACCESS_TOKEN (or HUBSPOT_TOKEN) in the environment.
 
 from __future__ import annotations
 
