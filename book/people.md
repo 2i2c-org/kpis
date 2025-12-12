@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.17.2
+    jupytext_version: 1.18.1
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -111,9 +111,8 @@ team = [ii.lower() for ii in team]
 ```
 
 ```{code-cell} ipython3
----
-tags: [remove-cell]
----
+:tags: [remove-cell]
+
 if len(json["items"]) == LIMIT_LENGTH:
     raise ValueError(f"Downloaded our max possible items ({LIMIT_LENGTH}), delete some items or increase the LIMIT_LENGTH for days off searches")
 ```

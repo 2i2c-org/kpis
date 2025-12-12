@@ -138,6 +138,7 @@ dmypy.json
 book/data/github-activity.csv
 book/data/hub-activity.csv
 book/data/key-communities.toml
+book/data/hubspot-deals.json
 book/data/airtable-communities.csv
 book/data/city-locations.csv
 

@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.17.2
+    jupytext_version: 1.18.1
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -16,40 +16,28 @@ kernelspec:
 
 # Revenue projections
 
-This document shows 2i2c's revenue projections by contract, and predicts 2i2c's monthly income along with its costs using data from our [Opportunities AirTable](https://airtable.com/appbjBTRIbgRiElkr/tblBTPDI1nKoq8wOL/viwuJxmlTnW1VZxIm?blocks=hide).
-
-When built via Jupyter Book, all opportunities are anonymized.
-If you want de-anonymized opportunities, run the notebook locally.
+This document shows 2i2c's revenue projections by contract and predicts monthly income alongside costs using our HubSpot deals data. See [Understanding these plots](#understanding-these-plots) below for details.
 
 :::{admonition} To run this notebook locally
 :class: dropdown
 To see the visualizations locally, follow these steps:
 
-1. Get an API key for AirTable (see [our team compass docs on AirTable](https://compass.2i2c.org/administration/airtable/)) and store it in an environment variable called `AIRTABLE_AP_KEY`.
-2. Download the latest data:
+1. Export a HubSpot private app token as `HUBSPOT_ACCESS_TOKEN` (or `HUBSPOT_TOKEN`).
+2. Download the latest data (cached to `book/data/hubspot-deals.json`):
 
    ```bash
-   python book/scripts/download_airtable_data.py
+   python book/scripts/download_hubspot_data.py
    ```
 3. Run this notebook from top to bottom.
 
-There are several important fields in both {kbd}`opportunities` and {kbd}`Contracts`, they're described below:
+Important fields in HubSpot:
 
-- {kbd}`Start Date` / {kbd}`End Date`: The starting and ending date of a contract.
-- {kbd}`Amount`: The total budget amount in the grant.
-- {kbd}`Amount for 2i2c`: The budget that is available to 2i2c (if <100% of the amount total)
-- {kbd}`CSS %`: The % that CS&S will take for their indirect costs.
+- {kbd}`contract_start_date` / {kbd}`contract_end_date`: Dates for committed deals.
+- {kbd}`target_start_date` / {kbd}`target_end_date`: Dates for pipeline deals that haven't closed yet.
+- {kbd}`amount`: Total contract value (used to calculate MRR).
+- {kbd}`hs_forecast_probability`: HubSpot's forecast probability for weighting pipeline revenue.
 :::
 
-:::{admonition} How numbers are prioritized
-:class: dropdown
-This notebook tries to use the _most accurate data that we've got_.
-For example, contracts are usually more accurate than opportunities.
-For data about dates and $$ amounts, here's the logic we follow:
-
-1. {kbd}`Amount (from Contract)`. If we have a contract with CS&S for this opportunity, use this.
-2. {kbd}`Amount (from Opportunities)`. If we have no contract, use our opportunities airtable for a best estimate.
-:::
 
 ```{code-cell} ipython3
 ---
@@ -60,22 +48,19 @@ tags: [remove-cell]
 ---
 import datetime
 import os
+import json
 from datetime import timedelta
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
+import ipywidgets as widgets
 
-# Apply 2i2c default styles
 import twoc
 from twoc.dates import round_to_nearest_month
-from IPython.display import Markdown
-from itables import show as ishow
-from plotly.graph_objects import Figure
-from plotly.subplots import make_subplots
-import ipywidgets as widgets
-from IPython.display import display
+from IPython.display import Markdown, display
 
 twoc.set_plotly_defaults()
 import plotly.io as pio
@@ -92,156 +77,15 @@ slideshow:
   slide_type: ''
 tags: [remove-cell]
 ---
-def convert_column_string_to_object(string):
-    """Convert an airtable column string to a Python object.
-
-    Linked records / rollups will have string representations of their value
-    so this converts it to a python object we can manipulate.
-    """
-    if not isinstance(string, str):
-        return string
-    obj = eval(string)
-    if isinstance(obj, list) and (len(obj) == 1):
-        obj = obj[0]
-    return obj
-```
-
-+++ {"editable": true, "slideshow": {"slide_type": ""}}
-
-## Costs
-
-Costs are manually calculated for now from [this Google Sheet](https://docs.google.com/spreadsheets/d/1OpKfPSIiFTY28OkV6--MhZygvdLVSdmpagjlnge2ELc/edit?usp=sharing). These **exclude our Fiscal Sponsor Fee** (because this fee is already subtracted from revenue projections below).
-
-```{code-cell} ipython3
----
-editable: true
-slideshow:
-  slide_type: ''
-tags: [remove-input, remove-stdout, remove-stderr]
----
 url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRUl-GB46-plmuYxaZSK_IQxgzYI_MBGN8YffTdYS_267YqPrXvROgIQGT-Xspeug__Ut6nRPRDHGZ5/pub?gid=1482549235&single=true&output=csv"
 costs = pd.read_csv(url, header=2).dropna()
 costs = costs.rename(columns={"Summary": "Date"})
 costs["Date"] = pd.to_datetime(costs["Date"])
-                     
+
 # These costs *exclude* our fiscal sponsor fee.
 # This is because all of the `opportunities` data subtracts the FSP fee in its amount
 MONTHLY_COSTS = costs["Expenses"].head(5).mean()
 ANNUAL_COSTS = MONTHLY_COSTS * 12
-
-md = f"""
-- **Assumed annual costs (no FSP)**: ${ANNUAL_COSTS:,.0f}
-- **Assumed monthly costs (no FSP)**: ${MONTHLY_COSTS:,.0f}
-"""
-Markdown(md)
-# costs.tail()
-```
-
-+++ {"editable": true, "slideshow": {"slide_type": ""}}
-
-## Revenue
-
-[Our Opportunities AirTable](https://airtable.com/appbjBTRIbgRiElkr/tblBTPDI1nKoq8wOL/viwuJxmlTnW1VZxIm?blocks=hide) has all of our potential sources of revenue, as well as links to any contracts for opportunities we have won. The view linked above is the source of data for this page.
-
-Opportunities are broken into two stages:
-
-```{list-table}
-- * **Opportunities**
-  * [link to AirTable](https://airtable.com/appbjBTRIbgRiElkr/tblBTPDI1nKoq8wOL/viwcsrE83taP6GhSl?blocks=hide)
-  * Potential sources of revenue. Each has a % probability of success. When an opportunity is "won", it gets a contract and we stop treating it as an opportunity.
-- * **Contracts**
-  * [link to AirTable](https://airtable.com/appbjBTRIbgRiElkr/tbliwB70vYg3hlkb1/viwGdDgmTcxfnsRDC?blocks=hide)
-  * Legal agreements with a total value, start, and stop date. Revenue is treated as 100% reliable.
-```
-
-Opportunities are broken into two categories.
-
-```{list-table}
-- * **Giving**
-  * Financial contributions given to support our mission without expectation of direct material benefit to the donor.
-- * **Services**
-  * Income generated through services we provide in exchange for payment.
-```
-
-````{admonition} Expected total amounts
-:class: dropdown
-
-We add a column for the *weighted* total amount to account for the fact that the opportunity may not come through.
-This helps us calculate the _total expected amount of revenue_:
-
-`total expected amount` = `opportunity total amounts` * `probability of each opportunity being won`
-
-or if you're a mathy person:
-
-```{math}
-
-E \left[ \sum(opportunities) \right] = \sum_{1}^{n\_opportunities} opportunity\_total * opportunity\_probability = \sum \left( E[opportunities] \right)
-
-```
-````
-
-
-````{admonition} We amortize total amounts over months
-:class: dropdown
-
-We spread the total revenue for an opportunity/contract into equal monthly amounts over the total lifetime of the contract.
-````
-
-```{code-cell} ipython3
----
-editable: true
-slideshow:
-  slide_type: ''
-tags: [remove-cell]
----
-# Read in the latest data from AirTable.
-# To update the data, run scripts/download_airtable_data.py
-opportunities = pd.read_csv("./data/airtable-opportunities.csv")
-
-# Remove all lost and abandoned opportunities
-opportunities = opportunities.replace("Closed—won", "Committed")
-opportunities = opportunities.loc[~opportunities["Stage"].str.contains("Closed")]
-
-# Drop opportunities without a value/start/end
-opportunities = opportunities.dropna(subset=["Opportunity Value", "Target Start Date", "Target End Date", "Probability Success"])
-
-# Rename to standardized column mapping
-rename = {
-    "Start Date (for projections)": "Start Date",
-    "End Date (for projections)": "End Date",
-    "Opportunity Name": "Name",
-}
-opportunities = opportunities.rename(columns=rename)
-
-# Convert probability to a %
-opportunities["Probability Success"] = opportunities["Probability Success"] / 5
-PROBABILITY_CUTOFF = .4
-opportunities = opportunities.query("`Probability Success` >= @PROBABILITY_CUTOFF")
-
-# Choose categories based on stage and category
-for ix, irow in opportunities.iterrows():
-    if (irow["Stage"] == "Committed") or (irow["Stage"] == "Contract Admin"):
-        opportunities.loc[ix, "Category"] = f"{irow['Category']}-Committed"
-
-        # For committed opportunities, set the expected value to 100% 
-        opportunities.loc[ix, "Weighted Value for 2i2c"] = irow["Value for 2i2c"]
-    else:
-        opportunities.loc[ix, "Category"] = f"{irow['Category']}-Prospective"
-
-# Ensure numeric values
-numeric_cols = ["Weighted Value for 2i2c", "Value for 2i2c"]
-for col in numeric_cols:
-    opportunities.loc[:, col] = opportunities.loc[:, col].astype(float)
-```
-
-```{code-cell} ipython3
----
-editable: true
-slideshow:
-  slide_type: ''
-tags: [remove-input]
----
-Markdown(f"Note: All projections **exclude opportunities with < %{PROBABILITY_CUTOFF*100:.0f} probability**.")
 ```
 
 ```{code-cell} ipython3
@@ -251,89 +95,169 @@ slideshow:
   slide_type: ''
 tags: [remove-cell]
 ---
-# If we want to look at the opportunities that were dropped
-# ishow(opportunities, pageLength=50)
-```
-
-```{code-cell} ipython3
----
-editable: true
-slideshow:
-  slide_type: ''
-tags: [remove-input]
----
-# TURNING THIS OFF because we'll password-protect this page for now.
-# Anonymize opportunities if we are in a CI/CD environment because this will be public
-# if "GITHUB_ACTION" in os.environ:
-#     for ix, name in opportunities["Name"].items():
-#         opportunities.loc[ix, "Name"] = f"Opportunity {ix}"
-```
-
-```{code-cell} ipython3
----
-editable: true
-slideshow:
-  slide_type: ''
-tags: [remove-cell]
----
-# Convert date columns to DateTime objects
-date_cols = ["Start Date", "End Date"]
-opportunities = opportunities.dropna(subset=date_cols)
-for col in date_cols:
-    opportunities.loc[:, col] = pd.to_datetime(opportunities[col])
-    # Round any dates to the nearest month start.
-    # This controls for the fact that some dates are the 1st, others the 31st.
-    opportunities.loc[:, col] = opportunities[col].apply(lambda x: round_to_nearest_month(x))
-```
-
-```{code-cell} ipython3
----
-editable: true
-slideshow:
-  slide_type: ''
-tags: [remove-cell]
----
-# Generate a month entry for each opportunity with its amortized monthly amount
-amortized_records = []
-
-for ix, irow in opportunities.iterrows():
-    # We *exclude* the month of the right-most date because we know it is always the 1st
-    # This is because of the month rounding we did above
-    dates = pd.date_range(
-        irow["Start Date"], irow["End Date"], freq="MS", inclusive="left"
+# Read cached HubSpot deals (refresh via scripts/download_hubspot_data.py)
+data_path = Path("./data/hubspot-deals.json")
+if not data_path.exists():
+    raise FileNotFoundError(
+        "Missing book/data/hubspot-deals.json. Run scripts/download_hubspot_data.py first."
     )
-    n_months = len(dates)
-    for date in dates:
-        amortized_records.append(
-            {
-                "Date": date,
-                "Total amount": irow["Value for 2i2c"],
-                "Monthly amount": irow["Value for 2i2c"] / n_months,
-                "Monthly amount (expected)": irow["Weighted Value for 2i2c"] / n_months,
-                "Category": irow["Category"],
-                "Stage": irow["Stage"],
-                "Name": irow["Name"],
-                "Probability Success": irow["Probability Success"],
-            }
-        )
-amortized_records = pd.DataFrame(amortized_records)
 
-# Drop all records before January 2022 since data is unreliable before then
+with data_path.open() as f:
+    deals_raw = json.load(f)
+
+deals = pd.json_normalize(deals_raw["results"])
+deals.columns = deals.columns.str.replace("properties.", "")
+deals = deals.rename(columns={"dealname": "Name"})
+
+keep_cols = [
+    "id",
+    "Name",
+    "amount",
+    "dealstage",
+    "contract_start_date",
+    "contract_end_date",
+    "target_start_date",
+    "target_end_date",
+    "closedate",
+    "hs_forecast_probability",
+]
+deals = deals[[col for col in keep_cols if col in deals.columns]]
+```
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
+PROBABILITY_CUTOFF = 0.4
+DEFAULT_PIPELINE_PROBABILITY = 0.5
+
+
+def parse_probability(value):
+    """Normalize HubSpot probability into [0, 1]."""
+    if pd.isna(value):
+        return np.nan
+    prob = float(value)
+    if prob > 1:
+        prob = prob / 100
+    return max(min(prob, 1.0), 0.0)
+
+
+def classify_deal_size(amount, start, end, name):
+    """Match deals-gantt buckets based on annualized revenue."""
+    if isinstance(name, str):
+        name_lower = name.lower()
+        if ("czi" in name_lower) or ("navigation fund" in name_lower):
+            return "OTHER"
+
+    if pd.isna(amount):
+        return "UNKNOWN"
+
+    start = pd.to_datetime(start, errors="coerce")
+    end = pd.to_datetime(end, errors="coerce")
+    if pd.isna(start) or pd.isna(end):
+        months = 12
+    else:
+        months = max(1, int(np.ceil((end - start).days / 30.44)))
+    arr = (float(amount) / months) * 12
+    if arr <= 10_000:
+        return "SMALL"
+    if arr < 45_000:
+        return "MEDIUM"
+    return "LARGE"
+
+
+def get_pipeline_dates(row):
+    """Pick start/end for pipeline deals with sensible fallbacks."""
+    start = row.target_start_date
+    end = row.target_end_date
+
+    if (pd.isna(start) or pd.isna(end)) and pd.notna(row.closedate):
+        start = row.closedate
+        end = start + pd.DateOffset(years=1)
+
+    return start, end
+
+
+def generate_monthly_records(df):
+    """Spread deal revenue across active months."""
+    records = []
+    for row in df.itertuples():
+        amount = pd.to_numeric(row.amount, errors="coerce")
+        stage = (row.dealstage or "").lower() if isinstance(row.dealstage, str) else ""
+
+        if pd.isna(amount) or amount <= 0:
+            continue
+        if "closedlost" in stage:
+            continue
+
+        probability = 1.0
+        deal_type = "Committed"
+        start = pd.to_datetime(row.contract_start_date, errors="coerce")
+        end = pd.to_datetime(row.contract_end_date, errors="coerce")
+
+        if pd.isna(start) or pd.isna(end):
+            deal_type = "Pipeline"
+            start, end = get_pipeline_dates(row)
+            probability = parse_probability(row.hs_forecast_probability)
+            if pd.isna(probability):
+                probability = DEFAULT_PIPELINE_PROBABILITY
+            if probability < PROBABILITY_CUTOFF:
+                continue
+
+        start = round_to_nearest_month(pd.to_datetime(start, errors="coerce"))
+        end = round_to_nearest_month(pd.to_datetime(end, errors="coerce"))
+        if pd.isna(start) or pd.isna(end):
+            continue
+
+        months = pd.date_range(start, end, freq="MS")
+        if len(months) == 0:
+            months = pd.DatetimeIndex([start])
+        n_months = max(len(months), 1)
+        monthly_amount = float(amount) / n_months
+        expected_monthly = monthly_amount * probability
+        deal_size = classify_deal_size(amount, start, end, row.Name)
+
+        for date in months:
+            records.append(
+                {
+                    "Date": date,
+                    "Total amount": float(amount),
+                    "Monthly amount": monthly_amount,
+                    "Monthly amount (expected)": expected_monthly,
+                    "Probability": probability,
+                    "Deal type": deal_type,
+                    "Stage": row.dealstage,
+                    "Name": row.Name,
+                    "Deal size": deal_size,
+                }
+            )
+    return pd.DataFrame(records)
+
+
+date_cols = [
+    "contract_start_date",
+    "contract_end_date",
+    "target_start_date",
+    "target_end_date",
+    "closedate",
+]
+for col in date_cols:
+    deals[col] = pd.to_datetime(deals[col], errors="coerce")
+deals["amount"] = pd.to_numeric(deals["amount"], errors="coerce")
+deals["hs_forecast_probability"] = deals["hs_forecast_probability"].apply(
+    parse_probability
+)
+deals["dealstage"] = deals["dealstage"].str.lower()
+deals["Name"] = deals["Name"].fillna("Unnamed deal")
+
+amortized_records = generate_monthly_records(deals)
 amortized_records = amortized_records.query("Date >= '2022-01-01'")
 amortized_records = amortized_records.sort_values("Monthly amount", ascending=False)
 ```
 
-+++ {"editable": true, "slideshow": {"slide_type": ""}}
-
-## Budget projections
-
-The following plots show our revenue projections under different sets of assumptions. They go 18 months into the future.
-There are three key figures, described below.
-
-1. Our **committed revenue** which only includes opportunities with an active contract or awaiting contracting.
-2. Our **estimated revenue** where opportunity totals are weighted by their expected probability.
-3. Our **best-case scenario revenue** which reflects revenue if every opportunity is successful.
-
 ```{code-cell} ipython3
 ---
 editable: true
@@ -341,43 +265,6 @@ slideshow:
   slide_type: ''
 tags: [remove-input]
 ---
-# Preparing figures for visualization
-legend_orientation = dict(
-    orientation="h",  # Horizontal orientation
-    yanchor="bottom",
-    y=1.02,
-    xanchor="center",
-    x=0.5,
-)
-
-def update_layout(fig):
-    fig.update_layout(
-        legend=legend_orientation,
-        legend_title_text="",
-        yaxis_title="",
-        xaxis_title="",
-    )
-
-
-def write_image(fig, path, fig_height=350):
-    """Write an image for a plotly figure to a path while applying common styling."""
-    # Create a new figure object
-    fig = Figure(fig)
-    # Update font size for print
-    fig.update_layout(
-        height=fig_height,
-        legend_font_size=10,
-        title=dict(
-            font=dict(
-                size=12,
-            )
-        ),
-    )
-    path = Path(path)
-    if not path.parent.exists():
-        path.parent.mkdir(parents=True, exist_ok=True)
-    fig.write_image(path, scale=4)
-
 # Historical query for the last 2 months through the next 18 months
 today = datetime.datetime.today()
 date_past = round_to_nearest_month(today - datetime.timedelta(days=30 * 3))
@@ -385,66 +272,75 @@ date_future = round_to_nearest_month(today + datetime.timedelta(days=30 * 18))
 
 # Query for date range
 qu_date = f"Date >= '{date_past:%Y-%m-%d}' and Date < '{date_future:%Y-%m-%d}'"
-qu_committed = f"`Stage` in ['Committed', 'Contract Admin']"
-
-# Colors that help with plotting
-colors = {
-    "Services-Committed": twoc.colors["bigblue"],
-    "Giving-Committed": twoc.colors["coral"],
-    "Giving-Prospective": "lightcoral",
-    "Services-Prospective": "lightblue", 
+type_colors = {
+    "Committed": "#0055cc",
+    "Pipeline": "#f26c4f",
 }
 
-bar_kwargs = dict(
-    color="Category",
-    category_orders={"Category": colors.keys()},
-    color_discrete_map=colors,
-    hover_name = "Name",
-    hover_data={
-            "Monthly amount": ":$,.0f",
-            "Monthly amount (expected)": ":$,.0f",
-            "Total amount": ":$,.0f",
-            "Probability Success": ":%.0f",
-    },
+size_colors = {
+    "SMALL": "#057761",   # forest
+    "MEDIUM": "#1D4EF5",  # bigblue
+    "LARGE": "#FF4E4F",   # coral
+    "OTHER": "#B86BFC",   # mauve
+    "UNKNOWN": "#A0A0A0",
+}
+size_domain = ["SMALL", "MEDIUM", "LARGE", "OTHER", "UNKNOWN"]
+
+data_in_range = amortized_records.query(qu_date)
+costs_in_range = costs.query(qu_date).sort_values("Date")
+
+grouped_size = (
+    data_in_range.groupby(["Date", "Deal size"], as_index=False).sum(numeric_only=True)
 )
+grouped_size["Name"] = grouped_size["Deal size"]
 
-
+# Build Plotly figures for each chart
 figures = {}
-labels = ["committed", "estimated", "full", "estimated by category"]
-for label in labels:
-    # Bar plot of revenue
-    data_plot = amortized_records.query(qu_date)
-    if label == "full":
-        # If we are using total amount, only use records with >= 40% chance success
-        iname = "Monthly amount"
-        title = "Monthly Revenue (full contract revenue)"
-    elif label == "estimated":
-        iname = "Monthly amount (expected)"
-        title = "Monthly Revenue (weighted by probability success)"
-    elif "category" in label:
-        data_plot = data_plot.groupby(["Date", "Category"]).sum("Monthly amount (expected)")
-        data_plot = data_plot.reset_index()
-        data_plot["Name"] = data_plot["Category"]
-        iname = "Monthly amount (expected)"
-        title = "Monthly Revenue (weighted by probability success)"
-    else:
-        iname = "Monthly amount"
-        data_plot = data_plot.query(qu_committed)
-        title = "Committed revenue"
+labels = ["committed", "weighted", "full", "by_size"]
 
-    figservice = px.bar(
+for label in labels:
+    data_plot = data_in_range.copy()
+
+    if label == "committed":
+        data_plot = data_plot.query("`Deal type` == 'Committed'")
+        y_col = "Monthly amount"
+        color_field = "Deal size"
+        color_map = size_colors
+        title = "Committed revenue (HubSpot contracts)"
+    elif label == "weighted":
+        y_col = "Monthly amount (expected)"
+        color_field = "Deal type"
+        color_map = type_colors
+        title = "Monthly revenue (weighted by forecast probability)"
+    elif label == "full":
+        y_col = "Monthly amount"
+        color_field = "Deal type"
+        color_map = type_colors
+        title = "Monthly revenue (full contract amount)"
+    else:  # by_size
+        data_plot = grouped_size
+        y_col = "Monthly amount (expected)"
+        color_field = "Deal size"
+        color_map = size_colors
+        title = "Monthly revenue by account size (weighted)"
+
+    # Create bar chart
+    fig = px.bar(
         data_plot,
         x="Date",
-        y=iname,
+        y=y_col,
+        color=color_field,
         title=title,
-        **bar_kwargs,
+        color_discrete_map=color_map,
+        hover_name="Name",
+        hover_data={y_col: ":$,.0f"},
     )
-    figservice.update_traces(marker_line_width=0.2)
+    fig.update_traces(marker_line_width=0.2)
 
-    # Dotted line plot of costs
-    figservice.add_scatter(
-        x=costs.query(qu_date)["Date"],
-        y=costs.query(qu_date)["Expenses"],
+    # Add cost line
+    fig.add_scatter(
+        x=costs_in_range["Date"],
+        y=costs_in_range["Expenses"],
         mode="lines",
         line_shape="hv",
         line_dash="dash",
@@ -452,9 +348,17 @@ for label in labels:
         line_color="black",
         name="Costs",
     )
-    update_layout(figservice)
-    figures[label] = figservice
 
+    figures[label] = fig
+```
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input]
+---
 # Create tab contents using Output widgets
 tabs = []
 for ilabel in labels:
@@ -464,10 +368,61 @@ for ilabel in labels:
     tabs.append(itab)
 
 # Create the tab widget
-tabs = widgets.Tab(tabs)
+tab_widget = widgets.Tab(tabs)
 for ii, ilabel in enumerate(labels):
-    tabs.set_title(ii, ilabel)
+    tab_widget.set_title(ii, ilabel.replace("_", " ").title())
 
 # Display the tab widget
-display(tabs)
+display(tab_widget)
 ```
+
+## Understanding revenue
+
+The plots above show our revenue projections under different assumptions, going 18 months into the future:
+
+1. Our **committed revenue** which only includes deals with contract dates in HubSpot.
+2. Our **estimated revenue** where pipeline deals are weighted by HubSpot's forecast probability.
+3. Our **best-case scenario revenue** which reflects revenue if every active/pipeline deal lands at full value.
+4. Our **revenue by account size** showing the mix of deal sizes.
+
+Note: All projections **exclude pipeline deals with < 40% forecast probability**.
+
+### Deal classification
+
+We pull deal data directly from HubSpot (via our deals-gantt dashboards) and split it into two buckets:
+
+```{list-table}
+- * **Committed deals**
+  * Have contract dates and are treated as 100% reliable revenue.
+- * **Pipeline deals**
+  * Missing contract dates. We use target dates (or close date + 12 months as a fallback), HubSpot's forecast probability, and exclude `closedlost` stages.
+```
+
+Deals are also grouped by account size using the same buckets as deals-gantt:
+
+```{list-table}
+- * **SMALL**
+  * ≤ $10k ARR
+- * **MEDIUM**
+  * $10k–$45k ARR
+- * **LARGE**
+  * ≥ $45k ARR
+- * **OTHER**
+  * Philanthropic / non-renewable (e.g., CZI, Navigation Fund)
+```
+
+### How we calculate revenue
+
+````{admonition} How we weight and amortize revenue
+:class: dropdown
+- Committed deals use `amount / months_between(contract_start_date, contract_end_date)` for Monthly Recurring Revenue (MRR).
+- Pipeline deals use the same calculation but are weighted by HubSpot's `hs_forecast_probability`.
+- All values are spread evenly across active months for a deal.
+````
+
+## Understanding costs
+
+Costs are manually calculated from [this Google Sheet](https://docs.google.com/spreadsheets/d/1OpKfPSIiFTY28OkV6--MhZygvdLVSdmpagjlnge2ELc/edit?usp=sharing) and **exclude our Fiscal Sponsor Fee** (because this fee is already subtracted from revenue projections above).
+
+- **Assumed annual costs (no FSP)**: See plot above
+- **Assumed monthly costs (no FSP)**: See plot above
