@@ -50,7 +50,7 @@ run(["python", "download_key_communities.py"], cwd="scripts", check=True)
 
 
 def setup(app):
-    # Load the requre module so that plotly works properly
+    # Load RequireJS for interactive visualizations
     # ref: https://jupyterbook.org/en/stable/interactive/interactive.html#plotly
     app.add_js_file(
         "https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"
