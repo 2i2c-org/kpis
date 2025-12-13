@@ -65,7 +65,7 @@ from IPython.display import Markdown, display
 twoc.set_plotly_defaults()
 import plotly.io as pio
 # Use jupyterlab renderer for better compatibility with Jupyter Book
-pio.renderers.default = "jupyterlab"
+pio.renderers.default = "notebook"
 
 # This just suppresses a warning
 pd.set_option("future.no_silent_downcasting", True)
