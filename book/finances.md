@@ -16,7 +16,7 @@ kernelspec:
 
 # Revenue projections
 
-This document shows 2i2c's revenue projections by contract and predicts monthly income alongside costs using our HubSpot deals data. See [Understanding these plots](#understanding-these-plots) below for details.
+This document shows 2i2c's revenue projections by contract and predicts monthly income alongside costs using our HubSpot deals data. See [Understanding revenue](#understanding-revenue) below for details.
 
 :::{admonition} To run this notebook locally
 :class: dropdown
@@ -64,7 +64,8 @@ from IPython.display import Markdown, display
 
 twoc.set_plotly_defaults()
 import plotly.io as pio
-pio.renderers.default = "notebook"
+# Use jupyterlab renderer for better compatibility with Jupyter Book
+pio.renderers.default = "jupyterlab"
 
 # This just suppresses a warning
 pd.set_option("future.no_silent_downcasting", True)
@@ -207,10 +208,14 @@ def generate_monthly_records(df):
             if probability < PROBABILITY_CUTOFF:
                 continue
 
-        start = round_to_nearest_month(pd.to_datetime(start, errors="coerce"))
-        end = round_to_nearest_month(pd.to_datetime(end, errors="coerce"))
+        # Convert to datetime first, then check before rounding
+        start = pd.to_datetime(start, errors="coerce")
+        end = pd.to_datetime(end, errors="coerce")
         if pd.isna(start) or pd.isna(end):
             continue
+
+        start = round_to_nearest_month(start)
+        end = round_to_nearest_month(end)
 
         months = pd.date_range(start, end, freq="MS")
         if len(months) == 0:
