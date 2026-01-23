@@ -17,10 +17,17 @@ def docs(session):
     session.install("-r", "requirements.txt")
     env = {}
     if "github" in session.posargs:
-        # Simulate being in a GitHub Action
         env["GITHUB_ACTION"] = "true"
-
+    session.run(*split("python book/scripts/download_upstream_data.py"))
     session.run(*split("sphinx-build -b dirhtml book book/_build/dirhtml"), env=env)
+
+
+@nox.session
+def data(session):
+    session.install("-r", "requirements.txt")
+    session.run(*split("python book/scripts/download_airtable_data.py"))
+    session.run(*split("python book/scripts/download_hubspot_data.py"))
+    session.run(*split("python book/scripts/download_grafana_activity.py"))
 
 
 @nox.session(name="docs-live")
@@ -28,6 +35,7 @@ def docs_live(session):
     """Build the documentation with sphinx-autobuild for live preview"""
     session.install("-r", "requirements.txt")
     session.install("sphinx-autobuild")
+    session.run(*split("python book/scripts/download_upstream_data.py"))
     session.run(
         *split(
             "sphinx-autobuild -b dirhtml book book/_build/dirhtml --ignore */book/data/*"
