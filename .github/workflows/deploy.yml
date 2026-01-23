@@ -50,41 +50,30 @@ jobs:
       - name: Install Python dependencies with uv
         run: uv pip install -r requirements.txt --system
 
+      - name: Install nox
+        run: uv pip install nox --system
+
       # This lets us encrypt a page with a password
       - name: Install staticrypt
         run: |
           npm install -g staticrypt
 
-      # Download the latest AirTable community data
-      - run: python book/scripts/download_airtable_data.py
+      # Download the latest data for dashboards
+      - name: Download dashboard data
+        run: nox -s data
         env:
           AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
-
-      # Download the latest HubSpot deals data
-      - run: python book/scripts/download_hubspot_data.py
-        env:
           HUBSPOT_ACCESS_TOKEN: ${{ secrets.HUBSPOT_ACCESS_TOKEN }}
-
-      # Download hub activity data from Grafana
-      - name: Load hub activity from grafana
-        env:
           GRAFANA_TOKEN: ${{ secrets.GRAFANA_TOKEN }}
-        run: python book/scripts/download_grafana_activity.py
-
-      # Download the latest GitHub data
-      # TODO: This is currently broken and we're disabling it so that it doesn't block updates.
-      # - name: Download latest Github data
-      #   run: python book/scripts/download_github_data.py
-      #   env:
-      #     TOKEN_GITHUB_READONLY: ${{ secrets.TOKEN_GITHUB_API_READONLY }}
 
       # Build the site
       - name: Build the Sphinx site
-        run: sphinx-build -v -b dirhtml book book/_build/dirhtml
+        run: nox -s docs
         env:
           AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
           HUBSPOT_ACCESS_TOKEN: ${{ secrets.HUBSPOT_ACCESS_TOKEN }}
           GH_TOKEN: ${{ secrets.TOKEN_GITHUB_API_READONLY }}
+          TOKEN_GITHUB_READONLY: ${{ secrets.TOKEN_GITHUB_API_READONLY }}
 
       # Upload artifact for looking at later
       - uses: actions/upload-artifact@v4

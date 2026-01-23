@@ -25,7 +25,7 @@ myst_enable_extensions = [
 nb_render_markdown_format = "myst"
 nb_execution_raise_on_error = True
 nb_execution_timeout = 180
-nb_execution_excludepatterns = ['upstream*']
+nb_execution_excludepatterns = []
 
 html_title = "2i2c KPIs"
 html_theme = "sphinx_2i2c_theme"
