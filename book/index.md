@@ -13,12 +13,13 @@ These are tools from the [ExecutableBooks project](https://executablebooks.org),
 
 Our currently running infrastructure and active users over time.
 ```
-```{grid-item-card} Accounting analysis 📈
-:link: finances/
-:link-type: doc
-
-Our financial activity, including our costs and revenue broken down by category.
-```
+% TEMPORARILY DISABLED: HubSpot data is broken - uncomment when fixed
+% ```{grid-item-card} Accounting analysis 📈
+% :link: finances/
+% :link-type: doc
+%
+% Our financial activity, including our costs and revenue broken down by category.
+% ```
 ```{grid-item-card} Upstream support 💗
 :link: upstream/
 :link-type: doc
@@ -34,7 +35,9 @@ Below is a breakdown of the categories above with more information about their s
 
 cloud
 upstream
-finances
 people
 marketing
 ```
+
+% TEMPORARILY DISABLED: HubSpot data is broken - move back up when fixed
+% finances
