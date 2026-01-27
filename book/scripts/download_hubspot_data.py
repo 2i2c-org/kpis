@@ -62,9 +62,10 @@ def load_token() -> str:
     """Return the HubSpot token from the environment."""
     token = os.environ.get("HUBSPOT_ACCESS_TOKEN") or os.environ.get("HUBSPOT_TOKEN")
     if not token:
+        repo_root = Path(__file__).resolve().parents[2]
         raise RuntimeError(
             "Missing HUBSPOT_ACCESS_TOKEN (or HUBSPOT_TOKEN). "
-            "Add it to your environment or ~/.zshrc.local."
+            f"Add it to your environment or {repo_root / '.env'}."
         )
     return token
 
@@ -148,7 +149,8 @@ def fetch_deals_rest(token: str) -> Dict:
 
 
 def main(force: bool, max_age_hours: int) -> None:
-    load_dotenv(override=False)
+    repo_root = Path(__file__).resolve().parents[2]
+    load_dotenv(repo_root / ".env", override=False)
     out_path = Path(__file__).resolve().parent / "../data/hubspot-deals.json"
     out_path = out_path.resolve()
     out_path.parent.mkdir(parents=True, exist_ok=True)

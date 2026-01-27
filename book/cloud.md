@@ -501,7 +501,7 @@ display(alt.hconcat(*chs_perc, title=f"% {scale} Total Active Users by community
 When the number of Monthly Active Users (MAUs) >= 5, assume the community is actively using the their hub.
 
 ```{code-cell} ipython3
-:tags: remove-cell
+:tags: [remove-cell]
 df['date'] = pd.to_datetime(df['date'])
 
 # Define cutoff = one year ago
@@ -542,7 +542,7 @@ result = result[['cluster', 'hub', 'first_value_date']]
 ```
 
 ```{code-cell} ipython3
-:tags: remove-input
+:tags: [remove-input]
 import ipywidgets as widgets
 from IPython.display import display
 
