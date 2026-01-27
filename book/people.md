@@ -168,7 +168,7 @@ df["assignees"] = df["assignees"].map(extract_assignee)
 # Limit last day to the last day of the year
 date_cols = ["first day", "last day"]
 for col in date_cols:
-    df.loc[:, col] = pd.to_datetime(df[col])
+    df[col] = pd.to_datetime(df[col], errors="coerce")
 df["last day"] = df["last day"].map(lambda a: np.min([a, end_cal]))
 
 # Drop entries with missing dates
@@ -382,61 +382,3 @@ fig.add_vline(ANNUAL_EXPECTED_DAYS_OFF, line_dash="dash")
 ```
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}}
-
-### Accumulated time off in the last six months
-
-This shows time off accumulated over the last six months, rather than the last calendar year.
-This gives us an idea for how we're accumulating time off more recently in general.
-
-```{code-cell} ipython3
----
-editable: true
-slideshow:
-  slide_type: ''
-tags: [remove-cell]
----
-# Three month window in the past/future
-start_win = today - timedelta(30 * 6)
-end_win = today + timedelta(30 * 1)
-
-# 6 month window so expected days is 40 / 2
-expected_n_days_in_win = 20
-# Calculate the "burn rate" of time off we'd expect if team members were hitting their 40 day target.
-expected = pd.DataFrame(
-    [{"day": start_win, "amount": 0}, {"day": today, "amount": expected_n_days_in_win}],
-)
-expected["day"] = pd.to_datetime(expected["day"])
-```
-
-```{code-cell} ipython3
----
-editable: true
-slideshow:
-  slide_type: ''
-tags: [remove-input]
----
-# Visualize over time
-fig = px.line(
-    cumulative.query("`first day` >= @start_win"),
-    x="first day",
-    y="cumulative",
-    color="person",
-    line_shape="hv",
-    height=700,
-    hover_data=["last day", "days_off"],
-    color_discrete_sequence=colormap,
-    title="Accumulated time off in a 6-month window",
-)
-fig.add_vline(pd.Timestamp.today(), line_dash="dash")
-fig.add_trace(
-    px.line(
-        expected,
-        x="day",
-        y="amount",
-        line_dash_sequence=["dot"],
-        color_discrete_sequence=["black"],
-    ).data[0]
-)
-fig.update_xaxes(range=[start_win, end_win])
-fig.update_yaxes(range=[0, 35])
-```

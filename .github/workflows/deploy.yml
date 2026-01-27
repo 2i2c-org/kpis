@@ -86,8 +86,16 @@ jobs:
       # Encrypt pages that are only meant for team consumption
       - name: Encrypt some pages
         run: |
-          staticrypt book/_build/dirhtml/people/index.html -p ${{ secrets.STATICRYPT_PASSWORD }} -d book/_build/dirhtml/people/ --short --template-color-primary "#1D4EF5" --template-title "Only for the 2i2c team!" --template-instructions "Check the team BitWarden for the password...";
-          staticrypt book/_build/dirhtml/finances/index.html -p ${{ secrets.STATICRYPT_PASSWORD }} -d book/_build/dirhtml/finances/ --short --template-color-primary "#1D4EF5" --template-title "Only for the 2i2c team!" --template-instructions "Check the team BitWarden for the password...";
+          if [ -f book/_build/dirhtml/people/index.html ]; then
+            staticrypt book/_build/dirhtml/people/index.html -p ${{ secrets.STATICRYPT_PASSWORD }} -d book/_build/dirhtml/people/ --short --template-color-primary "#1D4EF5" --template-title "Only for the 2i2c team!" --template-instructions "Check the team BitWarden for the password...";
+          else
+            echo "Skipping people encryption; missing book/_build/dirhtml/people/index.html"
+          fi
+          if [ -f book/_build/dirhtml/finances/index.html ]; then
+            staticrypt book/_build/dirhtml/finances/index.html -p ${{ secrets.STATICRYPT_PASSWORD }} -d book/_build/dirhtml/finances/ --short --template-color-primary "#1D4EF5" --template-title "Only for the 2i2c team!" --template-instructions "Check the team BitWarden for the password...";
+          else
+            echo "Skipping finances encryption; missing book/_build/dirhtml/finances/index.html"
+          fi
 
       # Upload artifact for looking at later
       - uses: actions/upload-artifact@v4
