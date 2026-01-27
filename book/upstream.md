@@ -419,6 +419,8 @@ stacked_repo_chart(
 )
 ```
 
+**Table of issues and PRs that match the plot above**:
+
 ```{code-cell} ipython3
 ---
 tags: [remove-input, hide-output]
@@ -441,6 +443,8 @@ stacked_repo_chart(
     "Issues opened by a team member, by repo",
 )
 ```
+
+**Table of issues and PRs that match the plot above**:
 
 ```{code-cell} ipython3
 ---
@@ -465,6 +469,8 @@ stacked_repo_chart(
 )
 ```
 
+**Table of issues and PRs that match the plot above**:
+
 ```{code-cell} ipython3
 ---
 tags: [remove-input, hide-output]
@@ -487,6 +493,8 @@ stacked_repo_chart(
     "Comments on issues by non-team authors, by repo",
 )
 ```
+
+**Table of issues and PRs that match the plot above**:
 
 ```{code-cell} ipython3
 ---
@@ -632,6 +640,8 @@ alt.Chart(team_repo_monthly, height=300).mark_bar(
     href="repo_url:N",
 ).add_params(selection).transform_filter(selection).properties(width="container").interactive()
 ```
+
+**Table of issues and PRs that match the plot above**:
 
 ```{code-cell} ipython3
 ---
