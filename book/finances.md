@@ -56,16 +56,14 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import ipywidgets as widgets
 
 import twoc
 from twoc.dates import round_to_nearest_month
-from IPython.display import Markdown, display
 
 twoc.set_plotly_defaults()
 import plotly.io as pio
-# Use jupyterlab renderer for better compatibility with Jupyter Book
-pio.renderers.default = "plotly_mimetype+notebook"
+# Use notebook renderer to output HTML for Jupyter Book
+pio.renderers.default = "notebook"
 
 # This just suppresses a warning
 pd.set_option("future.no_silent_downcasting", True)
@@ -364,21 +362,9 @@ slideshow:
   slide_type: ''
 tags: [remove-input]
 ---
-# Create tab contents using Output widgets
-tabs = []
-for ilabel in labels:
-    itab = widgets.Output()
-    with itab:
-        figures[ilabel].show()
-    tabs.append(itab)
-
-# Create the tab widget
-tab_widget = widgets.Tab(tabs)
-for ii, ilabel in enumerate(labels):
-    tab_widget.set_title(ii, ilabel.replace("_", " ").title())
-
-# Display the tab widget
-display(tab_widget)
+# Display figures directly
+for fig in figures.values():
+    fig.show()
 ```
 
 ## Understanding revenue

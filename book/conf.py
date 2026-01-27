@@ -14,8 +14,6 @@ exclude_patterns = [
     ".DS_Store",
     "**.ipynb_checkpoints",
     "data/**",
-    # TEMPORARILY DISABLED: HubSpot data is broken - remove when fixed
-    "finances.md",
 ]
 only_build_toc_files = True
 
