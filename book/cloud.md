@@ -115,7 +115,7 @@ slideshow:
 tags: [remove-cell]
 ---
 # The latest number of unique hubs and clusters
-n_hubs = int(np.ceil(unique_hubs.query("date > @last_week").groupby("cluster").mean("hubs")["hubs"].sum()))
+n_hubs = int(np.ceil(unique_hubs.query("date > @last_week").groupby("cluster")["hubs"].mean().sum()))
 n_clusters = unique_hubs.query("date > @last_week")["cluster"].nunique()
 ```
 
@@ -150,7 +150,7 @@ slideshow:
 tags: [full-width, remove-input]
 ---
 # Sort the clusters by most to least hubs
-sorted_clusters = unique_hubs.groupby("cluster").max("hubs").sort_values("hubs", ascending=False).index.values
+sorted_clusters = unique_hubs.groupby("cluster")["hubs"].max().sort_values(ascending=False).index.values
 
 px.area(unique_hubs, x="date", y="hubs", color="cluster", title="Number of active hubs by cluster", category_orders={"cluster": sorted_clusters})
 ```
@@ -206,7 +206,7 @@ for ix, irow in communities.iterrows():
     hubs = df.query("clusterhub in @clusterhub and timescale == 'monthly'")
     # Average across time for each hub, and then add across all hubs
     hubs = df.query("clusterhub in @clusterhub and timescale == 'monthly'")
-    n_users = hubs.groupby("clusterhub").mean("users")["users"].sum().round()
+    n_users = hubs.groupby("clusterhub")["users"].mean().sum().round()
     communities.loc[ix, "users"] = n_users
 ```
 
@@ -356,14 +356,14 @@ slideshow:
 tags: [remove-cell]
 ---
 # Sum by cluster so we avoid having too many categories
-df_clusters = df.groupby(["cluster", "date", "timescale"]).sum("users").reset_index()
+df_clusters = df.groupby(["cluster", "date", "timescale"])["users"].sum().reset_index()
 
 # Add logusers
 df_clusters = df_clusters.query("users > 0")
 df_clusters["logusers"] = df_clusters["users"].map(np.log10)
 
 # List of clusters sorted by size
-sorted_clusters = df_clusters.groupby("cluster").mean("users").sort_values("users", ascending=False).index.values
+sorted_clusters = df_clusters.groupby("cluster")["users"].mean().sort_values("users", ascending=False).index.values
 ```
 
 `````{code-cell} ipython3
@@ -384,7 +384,7 @@ grid = """
 scale_ordering = ["daily", "monthly"]
 interior = []
 for scale in scale_ordering:
-    users = df_clusters.query("timescale == @scale").groupby("cluster").mean("users")["users"].sum()
+    users = df_clusters.query("timescale == @scale").groupby("cluster")["users"].mean().sum()
     interior.append(dedent("""\
     ```{grid-item-card} %s
     %s
@@ -438,13 +438,12 @@ slideshow:
 tags: [remove-cell]
 ---
 # Mean users for each hub
-df_sums = df.groupby(["clusterhub", "timescale"]).mean("users")
+df_sums = df.groupby(["clusterhub", "timescale"])["users"].mean().reset_index()
 
 # Calculate bins and add it to data for plotting 
 bins = [0, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
 labels = [f"{bins[ii]}-{bins[ii+1]}" for ii in range(len(bins)-1)]
 df_sums["bin"] = pd.cut(df_sums["users"], bins, labels=labels, right=False)
-df_sums = df_sums.reset_index()
 max_y_bins = df_sums.groupby(["timescale", "bin"]).count()["users"].max() + 10
 max_y_users = df_sums.groupby(["timescale", "bin"]).sum()["users"].max() + 100
 ```
