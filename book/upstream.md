@@ -12,54 +12,20 @@ kernelspec:
   name: python3
 ---
 
-# Upstream community activity
+# Upstream activity
 
 This page summarizes where 2i2c spends its time in the Jupyter ecosystem and in our own technical repositories.
 It's goal is to give us an idea for where we're shouldering maintenance and development burden and having impact.
 
 Last updated: **{sub-ref}`today`**
 
-::::{dropdown} LFX Insights dashboards
-[LFX Insights](https://insights.linuxfoundation.org/) is a service from the Linux Foundation to track community health and contributions.
+:::{dropdown} Data sources
+These plots use SQLite releases from
+[`jupyter/github-data`](https://github.com/jupyter/github-data) and
+[`2i2c-org/github-data`](https://github.com/2i2c-org/github-data).
 
-:::{dropdown} JupyterHub
-<iframe
-    src="https://insights.linuxfoundation.org/embed/project/jupyterhub?widget=organizations-leaderboard&startDate=2025-01-23&endDate=2026-01-23&timeRangeKey=past365days&metric=all%3Aall&includeCollaborations=false"
-    width="600"
-    height="674"
-    allowfullscreen
-    loading="lazy"
-    style="border: none; border-radius: 8px">
-</iframe>
-
-[source](https://insights.linuxfoundation.org/project/jupyterhub/contributors)
+TODO: This needs another few QA passes, but it's useful-enough that we are posting it as-is. See this issue to track QA checks we should implement: https://github.com/2i2c-org/kpis/issues/81
 :::
-
-:::{dropdown} Jupyter Book
-<iframe
-    src="https://insights.linuxfoundation.org/embed/project/jupyter-book?widget=organizations-leaderboard&startDate=2025-01-23&endDate=2026-01-23&timeRangeKey=past365days&metric=all%3Aall&includeCollaborations=false"
-    width="600"
-    height="674"
-    allowfullscreen
-    loading="lazy"
-    style="border: none; border-radius: 8px">
-</iframe>
-
-[source](https://insights.linuxfoundation.org/project/jupyter-book/contributors)
-:::
-:::{dropdown} Jupyter Organization
-<iframe
-    src="https://insights.linuxfoundation.org/embed/project/jupyter?widget=organizations-leaderboard&startDate=2025-01-23&endDate=2026-01-23&timeRangeKey=past365days&metric=all%3Aall&includeCollaborations=false"
-    width="600"
-    height="674"
-    allowfullscreen
-    loading="lazy"
-    style="border: none; border-radius: 8px">
-</iframe>
-
-[source](https://insights.linuxfoundation.org/project/jupyter/contributors)
-:::
-::::
 
 ```{code-cell} ipython3
 ---
@@ -71,7 +37,7 @@ from subprocess import run
 
 import altair as alt
 import pandas as pd
-from IPython.display import HTML, Markdown, display
+from IPython.display import Markdown, display
 from twoc import colors as twoc_colors
 from yaml import safe_load
 
@@ -128,7 +94,8 @@ def load_activity_from_db(db_path, start_date_str, team_logins):
             repo as repo_id,
             pull_request,
             number,
-            title
+            title,
+            state
         FROM issues
         WHERE created_at >= ?
         """,
@@ -143,7 +110,11 @@ def load_activity_from_db(db_path, start_date_str, team_logins):
             ic.user as comment_user_id,
             ic.created_at as comment_created_at,
             i.user as issue_user_id,
-            i.repo as repo_id
+            i.repo as repo_id,
+            i.number as item_number,
+            i.title as item_title,
+            i.state as item_state,
+            i.pull_request as is_pull_request
         FROM issue_comments ic
         JOIN issues i ON ic.issue = i.id
         WHERE ic.created_at >= ?
@@ -258,111 +229,29 @@ Markdown(
 )
 ```
 
-:::{dropdown} Data sources
-These plots use SQLite releases from
-[`jupyter/github-data`](https://github.com/jupyter/github-data) and
-[`2i2c-org/github-data`](https://github.com/2i2c-org/github-data).
-To refresh the local data:
-
-- `python scripts/download_upstream_data.py`
-:::
-
-
-## Jupyter ecosystem
-
-Key upstream communities are documented in the
-[2i2c team compass](inv:tc#open-source/key-communities). We focus on Jupyter
-here because `jupyter/github-data` provides consistent activity data we can
-use for these projects.
 
 ```{code-cell} ipython3
 ---
 tags: [remove-cell]
 ---
-prs_upstream = prs_jupyter.copy()
-comments_upstream = comments_jupyter.copy()
-issues_upstream = issues_jupyter.copy()
-
-prs_upstream_team = prs_upstream[prs_upstream["is_team"]]
-issues_upstream_team = issues_upstream[issues_upstream["is_team_issue_author"]]
-comments_upstream_team = comments_upstream[comments_upstream["is_team_comment"]]
-
-upstream_top_repos = (
-    prs_upstream_team.groupby(["org", "repo_full_name"])
-    .size()
-    .reset_index(name="merged_prs")
-    .sort_values("merged_prs", ascending=False)
-    .head(25)
-)
-upstream_top_repos["repo_url"] = (
-    "https://github.com/" + upstream_top_repos["repo_full_name"].astype(str)
-)
-
-upstream_org_monthly = (
-    prs_upstream_team.dropna(subset=["merged_at", "org"])
-    .assign(month=lambda df: df["merged_at"].dt.to_period("M").dt.to_timestamp())
-    .groupby(["month", "org"])
-    .size()
-    .reset_index(name="merged_prs")
-)
-upstream_org_totals = (
-    upstream_org_monthly.groupby("month")["merged_prs"].sum().rename("month_total")
-)
-upstream_org_monthly = upstream_org_monthly.merge(
-    upstream_org_totals, on="month", how="left"
-)
-upstream_org_monthly["share"] = (
-    upstream_org_monthly["merged_prs"] / upstream_org_monthly["month_total"]
-)
-upstream_org_order = (
-    upstream_org_monthly.groupby("org")["merged_prs"]
-    .mean()
-    .sort_values(ascending=False)
-    .index.tolist()
-)
-upstream_org_monthly["org_rank"] = upstream_org_monthly["org"].map(
-    {org: rank for rank, org in enumerate(upstream_org_order, start=1)}
-)
-
-upstream_comment_share = comments_upstream_team.copy()
-upstream_comment_share["month"] = (
-    upstream_comment_share["comment_created_at"].dt.to_period("M").dt.to_timestamp()
-)
-upstream_comment_share = (
-    upstream_comment_share.groupby("month")
-    .agg(
-        total_comments=("comment_id", "count"),
-        non_team_comments=("is_team_issue_author", lambda x: (~x).sum()),
-    )
-    .reset_index()
-)
-upstream_comment_share["non_team_share"] = (
-    upstream_comment_share["non_team_comments"]
-    / upstream_comment_share["total_comments"]
-)
+# Filter for team activity
+prs_upstream_team = prs_jupyter[prs_jupyter["is_team"]]
+issues_upstream_team = issues_jupyter[issues_jupyter["is_team_issue_author"]]
+comments_upstream_team = comments_jupyter[comments_jupyter["is_team_comment"]]
 
 
-def build_color_maps(activity_df, orgs=None):
+def build_repo_color_map(activity_df):
+    """Build a color map for repos, colored by org."""
     if activity_df.empty:
-        return {}, {}
-
-    base_colors = TWOC_PALETTE
-    orgs = sorted(activity_df["org"].dropna().unique()) if orgs is None else list(orgs)
-
-    org_color_map = {}
+        return {}
+    orgs = sorted(activity_df["org"].dropna().unique())
     repo_color_map = {}
     for idx, org in enumerate(orgs):
-        base_color = base_colors[idx % len(base_colors)]
-        org_color_map[org] = base_color
-        repos = (
-            activity_df.loc[activity_df["org"] == org, "repo_full_name"]
-            .dropna()
-            .unique()
-        )
+        color = TWOC_PALETTE[idx % len(TWOC_PALETTE)]
+        repos = activity_df.loc[activity_df["org"] == org, "repo_full_name"].dropna().unique()
         for repo in repos:
-            repo_color_map[repo] = base_color
-
-    return org_color_map, repo_color_map
+            repo_color_map[repo] = color
+    return repo_color_map
 
 
 def category_color_map(categories, palette):
@@ -370,20 +259,15 @@ def category_color_map(categories, palette):
     return {name: palette[idx % len(palette)] for idx, name in enumerate(unique)}
 
 
-upstream_activity_events = (
-    pd.concat(
-        [
-            prs_upstream_team[["org", "repo_full_name"]],
-            issues_upstream_team[["org", "repo_full_name"]],
-            comments_upstream_team[["org", "repo_full_name"]],
-        ],
-        ignore_index=True,
-    )
-    .dropna()
-)
-upstream_org_color_map, upstream_repo_color_map = build_color_maps(
-    upstream_activity_events
-)
+upstream_activity_events = pd.concat(
+    [
+        prs_upstream_team[["org", "repo_full_name"]],
+        issues_upstream_team[["org", "repo_full_name"]],
+        comments_upstream_team[["org", "repo_full_name"]],
+    ],
+    ignore_index=True,
+).dropna()
+upstream_repo_color_map = build_repo_color_map(upstream_activity_events)
 
 
 def prepare_repo_stack(df, date_col, top_n=12):
@@ -413,6 +297,7 @@ def prepare_repo_stack(df, date_col, top_n=12):
 
 
 def stacked_repo_chart(df, repo_order, repo_color_map, title):
+    selection = alt.selection_point(fields=["repo_full_name"], bind="legend")
     color_range = [repo_color_map.get(repo, "#b0b0b0") for repo in repo_order]
     chart = (
         alt.Chart(df, title=title, height=300)
@@ -430,6 +315,8 @@ def stacked_repo_chart(df, repo_order, repo_color_map, title):
             tooltip=["month:T", "repo_full_name:N", "count:Q"],
             href="repo_url:N",
         )
+        .add_params(selection)
+        .transform_filter(selection)
     )
     return chart.properties(width="container").interactive()
 
@@ -440,124 +327,90 @@ upstream_prs_authored_stack, upstream_prs_authored_order = prepare_repo_stack(
 upstream_issues_opened_stack, upstream_issues_opened_order = prepare_repo_stack(
     issues_upstream_team, "created_at", top_n=12
 )
-upstream_comments_stack, upstream_comments_order = prepare_repo_stack(
-    comments_upstream_team, "comment_created_at", top_n=12
+# Comments on non-team PRs (support to community)
+upstream_nonteam_pr_comments = comments_upstream_team[
+    (~comments_upstream_team["is_team_issue_author"])
+    & (comments_upstream_team["is_pull_request"].notna())
+].copy()
+upstream_nonteam_pr_comments_stack, upstream_nonteam_pr_comments_order = prepare_repo_stack(
+    upstream_nonteam_pr_comments, "comment_created_at", top_n=12
 )
-```
 
-### Where our merged work lands (last 12 months)
-
-This shows the repos where 2i2c team members merged the most PRs in upstream projects.
-
-```{code-cell} ipython3
----
-tags: [remove-input]
----
-upstream_top_repos_clean = upstream_top_repos.dropna(
-    subset=["repo_full_name", "repo_url"]
-).copy()
-upstream_top_repos_clean["merged_prs"] = pd.to_numeric(
-    upstream_top_repos_clean["merged_prs"], errors="coerce"
+# Comments on non-team issues (support to community)
+upstream_nonteam_issue_comments = comments_upstream_team[
+    (~comments_upstream_team["is_team_issue_author"])
+    & (comments_upstream_team["is_pull_request"].isna())
+].copy()
+upstream_nonteam_issue_comments_stack, upstream_nonteam_issue_comments_order = prepare_repo_stack(
+    upstream_nonteam_issue_comments, "comment_created_at", top_n=12
 )
-upstream_top_repos_clean = upstream_top_repos_clean.dropna(subset=["merged_prs"])
-upstream_top_org_order = list(
-    dict.fromkeys(upstream_top_repos_clean["org"].dropna().tolist())
-)
-upstream_top_org_colors = [
-    upstream_org_color_map.get(org, "#b0b0b0") for org in upstream_top_org_order
-]
 
-# A tiny, empty chart to force-load the JS libraries
-empty = alt.Chart(pd.DataFrame()).mark_point()
-empty.properties(
-    title=""  # Forces the title to be an empty string instead of None
-)
-empty.display()
 
-display(
-    alt.Chart(upstream_top_repos_clean, height=350)
-    .mark_bar(size=14)
-    .encode(
-        y=alt.Y("repo_full_name:N", sort="-x", title="Repository"),
-        x=alt.X("merged_prs:Q", title="Merged PRs (team)"),
-        color=alt.Color(
-            "org:N",
-            title="Org",
-            scale=alt.Scale(domain=upstream_top_org_order, range=upstream_top_org_colors),
-        ),
-        tooltip=["org", "repo_full_name", "merged_prs"],
-        href="repo_url:N",
+def make_pr_table(df, date_col="merged_at"):
+    """Create a styled table of PRs for display."""
+    recent = df[df[date_col] >= start_recent].copy()
+    if recent.empty:
+        return pd.DataFrame(columns=["Item", "Title", "Author", "Last Updated", "Status"]).style.hide(axis="index")
+    recent = recent.sort_values(date_col, ascending=False)
+    recent["Item"] = recent.apply(
+        lambda r: f'<a href="https://github.com/{r["repo_full_name"]}/pull/{r["number"]}" target="_blank">{r["repo_full_name"]}#{r["number"]}</a>',
+        axis=1,
     )
-    .properties(width="container")
-    .interactive()
-)
+    recent["Last Updated"] = recent[date_col].dt.strftime("%Y-%m-%d")
+    recent["Status"] = "merged"
+    return recent[["Item", "title", "author_login", "Last Updated", "Status"]].rename(
+        columns={"title": "Title", "author_login": "Author"}
+    ).style.hide(axis="index")
+
+
+def make_issue_table(df, date_col="created_at"):
+    """Create a styled table of issues for display."""
+    recent = df[df[date_col] >= start_recent].copy()
+    if recent.empty:
+        return pd.DataFrame(columns=["Item", "Title", "Author", "Last Updated", "Status"]).style.hide(axis="index")
+    recent = recent.sort_values(date_col, ascending=False)
+    recent["Item"] = recent.apply(
+        lambda r: f'<a href="https://github.com/{r["repo_full_name"]}/issues/{r["number"]}" target="_blank">{r["repo_full_name"]}#{r["number"]}</a>',
+        axis=1,
+    )
+    recent["Last Updated"] = recent[date_col].dt.strftime("%Y-%m-%d")
+    recent["Status"] = recent["state"].fillna("unknown")
+    return recent[["Item", "title", "issue_author", "Last Updated", "Status"]].rename(
+        columns={"title": "Title", "issue_author": "Author"}
+    ).style.hide(axis="index")
+
+
+def make_comment_table(df, date_col="comment_created_at"):
+    """Create a styled table of commented items for display."""
+    recent = df[df[date_col] >= start_recent].copy()
+    if recent.empty:
+        return pd.DataFrame(columns=["Item", "Title", "Author", "Last Updated", "Status"]).style.hide(axis="index")
+    recent = recent.sort_values(date_col, ascending=False)
+    recent = recent.drop_duplicates(subset=["repo_full_name", "item_number", "comment_author"])
+    recent["item_type"] = recent["is_pull_request"].apply(lambda x: "pull" if pd.notna(x) else "issues")
+    recent["Item"] = recent.apply(
+        lambda r: f'<a href="https://github.com/{r["repo_full_name"]}/{r["item_type"]}/{int(r["item_number"])}" target="_blank">{r["repo_full_name"]}#{int(r["item_number"])}</a>',
+        axis=1,
+    )
+    recent["Last Updated"] = recent[date_col].dt.strftime("%Y-%m-%d")
+    recent["Status"] = recent["item_state"].fillna("unknown")
+    return recent[["Item", "item_title", "comment_author", "Last Updated", "Status"]].rename(
+        columns={"item_title": "Title", "comment_author": "Author"}
+    ).style.hide(axis="index")
 ```
 
-### Share of merged PRs by org (last 12 months)
+## Merged PRs authored by a team member
 
-Monthly share of merged PRs authored by a team member across Jupyter orgs.
+Reflects where we are making technical and community contributions.
 
 ```{code-cell} ipython3
 ---
 tags: [remove-input]
 ---
-upstream_org_colors = [
-    upstream_org_color_map.get(org, "#b0b0b0") for org in upstream_org_order
-]
+# Display a tiny empty chart first to force-load Vega-Lite JS libraries.
+# Without this, the first real chart may fail to render in MyST/Jupyter Book.
+alt.Chart(pd.DataFrame()).mark_point().display()
 
-alt.Chart(upstream_org_monthly, height=260).mark_bar(
-    size=14, stroke="white", strokeWidth=0.6
-).encode(
-    x=alt.X("month:T", title="Month"),
-    y=alt.Y(
-        "share:Q",
-        title="Share of team merged PRs",
-        axis=alt.Axis(format="%"),
-    ),
-    color=alt.Color(
-        "org:N",
-        scale=alt.Scale(domain=upstream_org_order, range=upstream_org_colors),
-        title="Org",
-    ),
-    order=alt.Order("org_rank:Q"),
-    tooltip=[
-        "month:T",
-        "org:N",
-        "merged_prs:Q",
-        alt.Tooltip("share:Q", format=".1%"),
-    ],
-).properties(width="container").interactive()
-```
-
-### Support to non-team authors over time
-
-Monthly share of team comments that are on issues/PRs opened by non-team authors.
-
-```{code-cell} ipython3
----
-tags: [remove-input]
----
-alt.Chart(upstream_comment_share, height=250).mark_line(point=True).encode(
-    x=alt.X("month:T", title="Month"),
-    y=alt.Y("non_team_share:Q", title="Share of comments on non-team items", axis=alt.Axis(format="%")),
-    tooltip=[
-        "month:T",
-        alt.Tooltip("non_team_share:Q", format=".1%"),
-        "total_comments:Q",
-        "non_team_comments:Q",
-    ],
-).properties(width="container").interactive()
-```
-
-### Upstream activity by repository (stacked, last 12 months)
-
-These stacked bars show monthly activity by repository. Hover for details,
-and click a segment to open the repository.
-
-```{code-cell} ipython3
----
-tags: [remove-input]
----
 stacked_repo_chart(
     upstream_prs_authored_stack,
     upstream_prs_authored_order,
@@ -565,6 +418,19 @@ stacked_repo_chart(
     "Merged PRs authored by a team member, by repo",
 )
 ```
+
+**Table of issues and PRs that match the plot above**:
+
+```{code-cell} ipython3
+---
+tags: [remove-input, hide-output]
+---
+make_pr_table(prs_upstream_team)
+```
+
+## Issues opened by a team member
+
+Reflects where we are opening suggestions and design proposals for improvements or bugs.
 
 ```{code-cell} ipython3
 ---
@@ -578,21 +444,108 @@ stacked_repo_chart(
 )
 ```
 
+**Table of issues and PRs that match the plot above**:
+
+```{code-cell} ipython3
+---
+tags: [remove-input, hide-output]
+---
+make_issue_table(issues_upstream_team)
+```
+
+## Comments on PRs by non-team authors
+
+Reflects where we are spending time reviewing and giving feedback for other contributors.
+
 ```{code-cell} ipython3
 ---
 tags: [remove-input]
 ---
 stacked_repo_chart(
-    upstream_comments_stack,
-    upstream_comments_order,
+    upstream_nonteam_pr_comments_stack,
+    upstream_nonteam_pr_comments_order,
     upstream_repo_color_map,
-    "Comments made by a team member, by repo",
+    "Comments on PRs by non-team authors, by repo",
 )
 ```
 
-## 2i2c organization focus
+**Table of issues and PRs that match the plot above**:
 
-Where we are spending time inside the 2i2c GitHub organization repositories.
+```{code-cell} ipython3
+---
+tags: [remove-input, hide-output]
+---
+make_comment_table(upstream_nonteam_pr_comments)
+```
+
+## Comments on issues by non-team authors
+
+Reflects where we are providing support and discussion for users and other contributors.
+
+```{code-cell} ipython3
+---
+tags: [remove-input]
+---
+stacked_repo_chart(
+    upstream_nonteam_issue_comments_stack,
+    upstream_nonteam_issue_comments_order,
+    upstream_repo_color_map,
+    "Comments on issues by non-team authors, by repo",
+)
+```
+
+**Table of issues and PRs that match the plot above**:
+
+```{code-cell} ipython3
+---
+tags: [remove-input, hide-output]
+---
+make_comment_table(upstream_nonteam_issue_comments)
+```
+
+
+## Upstream leaderboards
+
+[LFX Insights](https://insights.linuxfoundation.org/) is a service from the Linux Foundation to track community health and contributions.
+We keep an eye on the contribution leaderboards to see where we, and the collaborators we work with, stand in relation to others.
+
+:::{dropdown} JupyterHub
+<iframe
+    src="https://insights.linuxfoundation.org/embed/project/jupyterhub?widget=organizations-leaderboard&startDate=2025-01-23&endDate=2026-01-23&timeRangeKey=past365days&metric=all%3Aall&includeCollaborations=false"
+    width="600"
+    height="674"
+    allowfullscreen
+    loading="lazy"
+    style="border: none; border-radius: 8px">
+</iframe>
+
+[source](https://insights.linuxfoundation.org/project/jupyterhub/contributors)
+:::
+
+:::{dropdown} Jupyter Book
+<iframe
+    src="https://insights.linuxfoundation.org/embed/project/jupyter-book?widget=organizations-leaderboard&startDate=2025-01-23&endDate=2026-01-23&timeRangeKey=past365days&metric=all%3Aall&includeCollaborations=false"
+    width="600"
+    height="674"
+    allowfullscreen
+    loading="lazy"
+    style="border: none; border-radius: 8px">
+</iframe>
+
+[source](https://insights.linuxfoundation.org/project/jupyter-book/contributors)
+:::
+:::{dropdown} Jupyter Organization
+<iframe
+    src="https://insights.linuxfoundation.org/embed/project/jupyter?widget=organizations-leaderboard&startDate=2025-01-23&endDate=2026-01-23&timeRangeKey=past365days&metric=all%3Aall&includeCollaborations=false"
+    width="600"
+    height="674"
+    allowfullscreen
+    loading="lazy"
+    style="border: none; border-radius: 8px">
+</iframe>
+
+[source](https://insights.linuxfoundation.org/project/jupyter/contributors)
+:::
 
 ```{code-cell} ipython3
 ---
@@ -642,52 +595,18 @@ team_repo_monthly = (
     .size()
     .reset_index(name="total_activity")
 )
-team_repo_monthly = team_repo_monthly.merge(
-    team_repo_monthly.groupby("month")["total_activity"]
-    .sum()
-    .rename("month_total"),
-    on="month",
-    how="left",
-)
-team_repo_monthly["share"] = (
-    team_repo_monthly["total_activity"] / team_repo_monthly["month_total"]
-)
 ```
 
-### Where we are focusing in our org (last 12 months)
+## Activity in 2i2c repositories
 
-Repos where the team merged the most PRs inside 2i2c-org.
-
+Reflects where we're spending our time in 2i2c infrastructure repositories (these are all open source, but currently controlled by 2i2c).
 ```{code-cell} ipython3
 ---
 tags: [remove-input]
 ---
 team_repo_order = team_total_prs["repo_full_name"].tolist()
 team_repo_color_map = category_color_map(team_repo_order, TWOC_PALETTE)
-team_repo_colors = [team_repo_color_map.get(repo, "#b0b0b0") for repo in team_repo_order]
 
-alt.Chart(team_total_prs, height=350).mark_bar(size=14).encode(
-    y=alt.Y("repo_full_name:N", sort="-x", title="Repository"),
-    x=alt.X("merged_prs:Q", title="Merged PRs (team)"),
-    color=alt.Color(
-        "repo_full_name:N",
-        sort=team_repo_order,
-        scale=alt.Scale(domain=team_repo_order, range=team_repo_colors),
-        legend=None,
-    ),
-    tooltip=["repo_full_name", "merged_prs"],
-    href="repo_url:N",
-).properties(width="container").interactive()
-```
-
-### Team activity by repo over time (last 12 months)
-
-Monthly share of team activity (PRs + comments) in the top 2i2c repos.
-
-```{code-cell} ipython3
----
-tags: [remove-input]
----
 team_repo_monthly = team_repo_monthly.merge(
     team_total_prs[["repo_full_name", "repo_url"]],
     on="repo_full_name",
@@ -701,11 +620,12 @@ team_repo_monthly["repo_rank"] = team_repo_monthly["repo_full_name"].map(
     {repo: rank for rank, repo in enumerate(team_repo_monthly_order, start=1)}
 )
 
+selection = alt.selection_point(fields=["repo_full_name"], bind="legend")
 alt.Chart(team_repo_monthly, height=300).mark_bar(
     size=14, stroke="white", strokeWidth=0.6
 ).encode(
     x=alt.X("month:T", title="Month"),
-    y=alt.Y("share:Q", title="Share of team activity", axis=alt.Axis(format="%")),
+    y=alt.Y("total_activity:Q", title="PRs merged & Comments"),
     color=alt.Color(
         "repo_full_name:N",
         title="Repository",
@@ -716,8 +636,44 @@ alt.Chart(team_repo_monthly, height=300).mark_bar(
         "month:T",
         "repo_full_name:N",
         "total_activity:Q",
-        alt.Tooltip("share:Q", format=".1%"),
     ],
     href="repo_url:N",
-).properties(width="container").interactive()
+).add_params(selection).transform_filter(selection).properties(width="container").interactive()
+```
+
+**Table of issues and PRs that match the plot above**:
+
+```{code-cell} ipython3
+---
+tags: [remove-input, hide-output]
+---
+# Show recent activity (PRs merged + comments) in 2i2c repos
+# Combine PRs and comments into a unified table
+prs_for_table = team_org_prs[team_org_prs["merged_at"] >= start_recent].copy()
+prs_for_table["Item"] = prs_for_table.apply(
+    lambda r: f'<a href="https://github.com/{r["repo_full_name"]}/pull/{r["number"]}" target="_blank">{r["repo_full_name"]}#{r["number"]}</a>',
+    axis=1,
+)
+prs_for_table["Title"] = prs_for_table["title"]
+prs_for_table["Author"] = prs_for_table["author_login"]
+prs_for_table["Last Updated"] = prs_for_table["merged_at"].dt.strftime("%Y-%m-%d")
+prs_for_table["Type"] = "PR merged"
+prs_for_table = prs_for_table[["Item", "Title", "Author", "Last Updated", "Type"]]
+
+comments_for_table = team_org_comments[team_org_comments["comment_created_at"] >= start_recent].copy()
+comments_for_table = comments_for_table.drop_duplicates(subset=["repo_full_name", "item_number", "comment_author"])
+comments_for_table["item_type"] = comments_for_table["is_pull_request"].apply(lambda x: "pull" if pd.notna(x) else "issues")
+comments_for_table["Item"] = comments_for_table.apply(
+    lambda r: f'<a href="https://github.com/{r["repo_full_name"]}/{r["item_type"]}/{int(r["item_number"])}" target="_blank">{r["repo_full_name"]}#{int(r["item_number"])}</a>',
+    axis=1,
+)
+comments_for_table["Title"] = comments_for_table["item_title"]
+comments_for_table["Author"] = comments_for_table["comment_author"]
+comments_for_table["Last Updated"] = comments_for_table["comment_created_at"].dt.strftime("%Y-%m-%d")
+comments_for_table["Type"] = "Comment"
+comments_for_table = comments_for_table[["Item", "Title", "Author", "Last Updated", "Type"]]
+
+combined_table = pd.concat([prs_for_table, comments_for_table], ignore_index=True)
+combined_table = combined_table.sort_values("Last Updated", ascending=False)
+combined_table.style.hide(axis="index")
 ```

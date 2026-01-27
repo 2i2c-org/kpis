@@ -26,7 +26,8 @@ def docs(session):
 def data(session):
     session.install("-r", "requirements.txt")
     session.run(*split("python book/scripts/download_airtable_data.py"))
-    session.run(*split("python book/scripts/download_hubspot_data.py"))
+    # TEMPORARILY DISABLED: HubSpot data is broken - re-enable when fixed
+    # session.run(*split("python book/scripts/download_hubspot_data.py"))
     session.run(*split("python book/scripts/download_grafana_activity.py"))
 
 
