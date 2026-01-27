@@ -25,7 +25,8 @@ myst_enable_extensions = [
 ]
 
 nb_render_markdown_format = "myst"
-nb_execution_raise_on_error = True
+# Because of this bug: https://github.com/executablebooks/MyST-NB/issues/616
+# nb_execution_raise_on_error = True
 nb_execution_show_tb = True
 nb_execution_timeout = 180
 nb_execution_excludepatterns = []
