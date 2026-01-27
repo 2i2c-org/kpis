@@ -49,8 +49,12 @@ import numpy as np
 import datetime
 from pathlib import Path
 import plotly.express as px
-import altair as alt
+import plotly.graph_objects as go
+import plotly.io as pio
+from plotly.subplots import make_subplots
 from textwrap import dedent
+
+pio.renderers.default = "notebook"
 from IPython.display import Markdown, display
 import requests
 from rich.progress import track
@@ -461,37 +465,42 @@ slideshow:
   slide_type: ''
 tags: [remove-input, remove-stderr, remove-stdout]
 ---
-chs_bins = []
-chs_users = []
-chs_perc = []
 groups = df_sums.groupby("timescale")
-for scale in scale_ordering:
+
+# Create subplots for number of communities in bins
+fig_bins = make_subplots(rows=1, cols=len(scale_ordering), subplot_titles=[s.capitalize() for s in scale_ordering])
+for i, scale in enumerate(scale_ordering, 1):
     idata = groups.get_group(scale).copy()
     binned_data = idata.groupby('bin').size().reset_index(name='count')
+    fig_bins.add_trace(
+        go.Bar(x=binned_data['bin'].astype(str), y=binned_data['count'], name=scale),
+        row=1, col=i
+    )
+    fig_bins.update_xaxes(title_text=f"{scale.capitalize()} Active Users", tickangle=-45, row=1, col=i)
+    fig_bins.update_yaxes(title_text="Number of communities", range=[0, max_y_bins], row=1, col=i)
+fig_bins.update_layout(title_text="Number of communities in bins of active users", showlegend=False)
+display(fig_bins)
 
-    # Number 
-    ch = alt.Chart(idata, title=f"{scale}").mark_bar().encode(
-        alt.X("bin:O", scale=alt.Scale(domain=labels), axis=alt.Axis(labelAngle=-45), title=f"{scale} Active Users"),
-        y=alt.Y('count()', title="Number of communities", scale=alt.Scale(domain=[0, max_y_bins])),
-        color="clusterhub",
-        tooltip=["users", "clusterhub"],
-    ).interactive()
-    chs_bins.append(ch)
-
-    # Percentage breakdown chart
+# Create subplots for percentage breakdown
+fig_perc = make_subplots(rows=1, cols=len(scale_ordering), subplot_titles=[s.capitalize() for s in scale_ordering])
+for i, scale in enumerate(scale_ordering, 1):
+    idata = groups.get_group(scale).copy()
     bin_sums = idata.groupby("bin").sum()["users"]
     bin_sums = bin_sums / bin_sums.sum()
-    ch = alt.Chart(bin_sums.reset_index(), title=f"{scale}").mark_bar().encode(
-        x = "bin",
-        y = alt.Y("users", axis=alt.Axis(format='%'), scale=alt.Scale(domain=[0, 1])),
-        tooltip=["bin", alt.Tooltip("users", format='.0%')],
-    ).interactive()
-    chs_perc.append(ch)
-
-# Display the charts
-display(alt.hconcat(*chs_bins, title=f"Number of communities in bins of active users"))
-display(alt.hconcat(*chs_users, title=f"Total Active Users by community size"))
-display(alt.hconcat(*chs_perc, title=f"% {scale} Total Active Users by community size"))
+    bin_sums = bin_sums.reset_index()
+    fig_perc.add_trace(
+        go.Bar(
+            x=bin_sums['bin'].astype(str),
+            y=bin_sums['users'],
+            name=scale,
+            hovertemplate='%{x}<br>%{y:.0%}<extra></extra>'
+        ),
+        row=1, col=i
+    )
+    fig_perc.update_xaxes(title_text="Bin", tickangle=-45, row=1, col=i)
+    fig_perc.update_yaxes(title_text="% of users", tickformat='.0%', range=[0, 1], row=1, col=i)
+fig_perc.update_layout(title_text="% Total Active Users by community size", showlegend=False)
+display(fig_perc)
 ```
 
 ### Date of First Value

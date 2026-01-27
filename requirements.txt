@@ -8,8 +8,6 @@ tomlkit
 # To run the code
 # Used by the upstream downloader for cached GitHub release assets.
 pooch
-# Altair 6 emits Vega-Lite v6 outputs that myst-nb/nbformat don't validate/render yet.
-altair<6
 geopandas
 ghapi
 ipywidgets

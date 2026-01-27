@@ -35,15 +35,15 @@ from pathlib import Path
 import sqlite3
 from subprocess import run
 
-import altair as alt
 import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+import plotly.io as pio
 from IPython.display import Markdown, display
 from twoc import colors as twoc_colors
 from yaml import safe_load
 
-# Use HTML renderer so MyST renders charts without vega-lite mime warnings.
-alt.renderers.enable("html")
-alt.data_transformers.disable_max_rows()
+pio.renderers.default = "notebook"
 
 # Colors we'll re-use
 TWOC_PALETTE = [
@@ -285,40 +285,40 @@ def prepare_repo_stack(df, date_col, top_n=12):
         .size()
         .reset_index(name="count")
     )
-    repo_order = (
-        counts.groupby("repo_full_name")["count"]
-        .mean()
-        .sort_values(ascending=False)
-    )
+    # Calculate mean count per repo for ordering within orgs
+    repo_means = counts.groupby("repo_full_name")["count"].mean().reset_index()
+    repo_means["org"] = repo_means["repo_full_name"].str.split("/").str[0]
+    # Sort by org, then by count (descending) within org
+    repo_means = repo_means.sort_values(["org", "count"], ascending=[True, False])
+    repo_order = repo_means["repo_full_name"].tolist()
     counts["repo_rank"] = counts["repo_full_name"].map(
-        {repo: rank for rank, repo in enumerate(repo_order.index, start=1)}
+        {repo: rank for rank, repo in enumerate(repo_order, start=1)}
     )
-    return counts, list(repo_order.index)
+    return counts, repo_order
 
 
 def stacked_repo_chart(df, repo_order, repo_color_map, title):
-    selection = alt.selection_point(fields=["repo_full_name"], bind="legend")
-    color_range = [repo_color_map.get(repo, "#b0b0b0") for repo in repo_order]
-    chart = (
-        alt.Chart(df, title=title, height=300)
-        .mark_bar(size=14, stroke="white", strokeWidth=0.6)
-        .encode(
-            x=alt.X("month:T", title="Month"),
-            y=alt.Y("count:Q", title="Count"),
-            color=alt.Color(
-                "repo_full_name:N",
-                sort=repo_order,
-                title="Repository",
-                scale=alt.Scale(domain=repo_order, range=color_range),
-            ),
-            order=alt.Order("repo_rank:Q", sort="ascending"),
-            tooltip=["month:T", "repo_full_name:N", "count:Q"],
-            href="repo_url:N",
-        )
-        .add_params(selection)
-        .transform_filter(selection)
+    color_map = {repo: repo_color_map.get(repo, "#b0b0b0") for repo in repo_order}
+    fig = px.bar(
+        df.sort_values("repo_rank"),
+        x="month",
+        y="count",
+        color="repo_full_name",
+        title=title,
+        height=650,
+        color_discrete_map=color_map,
+        category_orders={"repo_full_name": repo_order},
+        hover_data={"month": True, "repo_full_name": True, "count": True, "repo_url": True, "repo_rank": False},
     )
-    return chart.properties(width="container").interactive()
+    fig.update_layout(
+        xaxis_title="Month",
+        yaxis_title="Count",
+        legend_title="Repository",
+        barmode="stack",
+        legend=dict(font=dict(size=10)),
+    )
+    fig.update_traces(marker_line_color="white", marker_line_width=0.6)
+    fig.show()
 
 
 upstream_prs_authored_stack, upstream_prs_authored_order = prepare_repo_stack(
@@ -407,10 +407,6 @@ Reflects where we are making technical and community contributions.
 ---
 tags: [remove-input]
 ---
-# Display a tiny empty chart first to force-load Vega-Lite JS libraries.
-# Without this, the first real chart may fail to render in MyST/Jupyter Book.
-alt.Chart(pd.DataFrame()).mark_point().display()
-
 stacked_repo_chart(
     upstream_prs_authored_stack,
     upstream_prs_authored_order,
@@ -620,25 +616,26 @@ team_repo_monthly["repo_rank"] = team_repo_monthly["repo_full_name"].map(
     {repo: rank for rank, repo in enumerate(team_repo_monthly_order, start=1)}
 )
 
-selection = alt.selection_point(fields=["repo_full_name"], bind="legend")
-alt.Chart(team_repo_monthly, height=300).mark_bar(
-    size=14, stroke="white", strokeWidth=0.6
-).encode(
-    x=alt.X("month:T", title="Month"),
-    y=alt.Y("total_activity:Q", title="PRs merged & Comments"),
-    color=alt.Color(
-        "repo_full_name:N",
-        title="Repository",
-        scale=alt.Scale(domain=team_repo_monthly_order, range=team_repo_monthly_colors),
-    ),
-    order=alt.Order("repo_rank:Q"),
-    tooltip=[
-        "month:T",
-        "repo_full_name:N",
-        "total_activity:Q",
-    ],
-    href="repo_url:N",
-).add_params(selection).transform_filter(selection).properties(width="container").interactive()
+team_color_map = {repo: color for repo, color in zip(team_repo_monthly_order, team_repo_monthly_colors)}
+fig = px.bar(
+    team_repo_monthly.sort_values("repo_rank"),
+    x="month",
+    y="total_activity",
+    color="repo_full_name",
+    height=650,
+    color_discrete_map=team_color_map,
+    category_orders={"repo_full_name": team_repo_monthly_order},
+    hover_data={"month": True, "repo_full_name": True, "total_activity": True, "repo_url": True, "repo_rank": False},
+)
+fig.update_layout(
+    xaxis_title="Month",
+    yaxis_title="PRs merged & Comments",
+    legend_title="Repository",
+    barmode="stack",
+    legend=dict(font=dict(size=10)),
+)
+fig.update_traces(marker_line_color="white", marker_line_width=0.6)
+fig.show()
 ```
 
 **Table of issues and PRs that match the plot above**:
