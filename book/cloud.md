@@ -50,15 +50,15 @@ import datetime
 from pathlib import Path
 import plotly.express as px
 import plotly.graph_objects as go
-import plotly.io as pio
 from plotly.subplots import make_subplots
 from textwrap import dedent
-
-pio.renderers.default = "notebook"
 from IPython.display import Markdown, display
 import requests
 from rich.progress import track
+import twoc
 from twoc import colors
+
+twoc.set_plotly_defaults()
 ```
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}}
@@ -172,13 +172,7 @@ slideshow:
   slide_type: ''
 tags: [remove-cell]
 ---
-import pandas as pd
-import pandas as pd
-import plotly.express as px
-import numpy as np
 from plotly.express.colors import qualitative
-import plotly.io as pio
-pio.renderers.default = "notebook"
 ```
 
 ```{code-cell} ipython3
@@ -479,7 +473,7 @@ for i, scale in enumerate(scale_ordering, 1):
     fig_bins.update_xaxes(title_text=f"{scale.capitalize()} Active Users", tickangle=-45, row=1, col=i)
     fig_bins.update_yaxes(title_text="Number of communities", range=[0, max_y_bins], row=1, col=i)
 fig_bins.update_layout(title_text="Number of communities in bins of active users", showlegend=False)
-display(fig_bins)
+fig_bins.show()
 
 # Create subplots for percentage breakdown
 fig_perc = make_subplots(rows=1, cols=len(scale_ordering), subplot_titles=[s.capitalize() for s in scale_ordering])
@@ -500,7 +494,7 @@ for i, scale in enumerate(scale_ordering, 1):
     fig_perc.update_xaxes(title_text="Bin", tickangle=-45, row=1, col=i)
     fig_perc.update_yaxes(title_text="% of users", tickformat='.0%', range=[0, 1], row=1, col=i)
 fig_perc.update_layout(title_text="% Total Active Users by community size", showlegend=False)
-display(fig_perc)
+fig_perc.show()
 ```
 
 ### Date of First Value

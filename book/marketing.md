@@ -31,10 +31,9 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 import plotly.express as px
 import pandas as pd
-import plotly.io as pio
+import twoc
 
-# Set plotly renderer for static HTML output
-pio.renderers.default = "plotly_mimetype+notebook"
+twoc.set_plotly_defaults()
 
 # Fetch and parse RSS feed
 response = requests.get("https://2i2c.org/blog/index.xml")

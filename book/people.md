@@ -202,9 +202,10 @@ slideshow:
   slide_type: ''
 tags: [remove-input]
 ---
-import plotly.io as pio
 import plotly.express as px
-pio.renderers.default = "notebook"
+import twoc
+
+twoc.set_plotly_defaults()
 
 df["last day plus one"] = df["last day"] + timedelta(days=1)
 

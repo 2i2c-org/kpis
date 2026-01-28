@@ -61,9 +61,6 @@ import twoc
 from twoc.dates import round_to_nearest_month
 
 twoc.set_plotly_defaults()
-import plotly.io as pio
-# Use notebook renderer to output HTML for Jupyter Book
-pio.renderers.default = "notebook"
 
 # This just suppresses a warning
 pd.set_option("future.no_silent_downcasting", True)
@@ -367,6 +364,7 @@ for fig in figures.values():
     fig.show()
 ```
 
+(undertanding-revenue)=
 ## Understanding revenue
 
 The plots above show our revenue projections under different assumptions, going 18 months into the future:

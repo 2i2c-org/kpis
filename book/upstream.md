@@ -38,12 +38,12 @@ from subprocess import run
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import plotly.io as pio
 from IPython.display import Markdown, display
+import twoc
 from twoc import colors as twoc_colors
 from yaml import safe_load
 
-pio.renderers.default = "notebook"
+twoc.set_plotly_defaults()
 
 # Colors we'll re-use
 TWOC_PALETTE = [
