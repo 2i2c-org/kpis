@@ -127,54 +127,53 @@ else:
     here = Path(".")
 
 path_activity = Path(here / "../data/hub-activity.csv")
-if not path_activity.exists():
-    print(f"No hub activity data found at {path_activity}, downloading...")
-    activity = []
-    errors = []
-    for queryname, query in queries.items():
-        for uid, idata in track(list(datasources.groupby("uid"))):
-            try:
-                # Set up prometheus for this cluster and grab the activity
-                prometheus = get_pandas_prometheus(
-                    "https://grafana.pilot.2i2c.cloud", GRAFANA_TOKEN, uid
-                )
-                iactivity = prometheus.query_range(
-                    query,
-                    datetime.today() - timedelta(days=365),
-                    datetime.today(),
-                    "1d",
-                )
-                # Extract hub name from the brackets
-                iactivity.columns = [
-                    re.findall(r'[^"]+', col)[1] for col in iactivity.columns
-                ]
-                iactivity.columns.name = "hub"
 
-                # Clean up the timestamp into a date
-                iactivity.index.name = "date"
-                iactivity.index = iactivity.index.floor("D")
+# Always download fresh data to ensure consistency between local and CI builds
+print(f"Downloading hub activity data to {path_activity}...")
+activity = []
+errors = []
+for queryname, query in queries.items():
+    for uid, idata in track(list(datasources.groupby("uid"))):
+        try:
+            # Set up prometheus for this cluster and grab the activity
+            prometheus = get_pandas_prometheus(
+                "https://grafana.pilot.2i2c.cloud", GRAFANA_TOKEN, uid
+            )
+            iactivity = prometheus.query_range(
+                query,
+                datetime.today() - timedelta(days=365),
+                datetime.today(),
+                "1d",
+            )
+            # Extract hub name from the brackets
+            iactivity.columns = [
+                re.findall(r'[^"]+', col)[1] for col in iactivity.columns
+            ]
+            iactivity.columns.name = "hub"
 
-                # Re-work so that we're tidy
-                iactivity = iactivity.stack("hub").to_frame("users")
-                iactivity = iactivity.reset_index()
+            # Clean up the timestamp into a date
+            iactivity.index.name = "date"
+            iactivity.index = iactivity.index.floor("D")
 
-                # Add metadata so that we can track this later
-                iactivity["cluster"] = idata["name"].squeeze()
-                iactivity["timescale"] = queryname
+            # Re-work so that we're tidy
+            iactivity = iactivity.stack("hub").to_frame("users")
+            iactivity = iactivity.reset_index()
 
-                # Add to our list so that we concatenate across all clusters
-                activity.append(iactivity)
-            except Exception as e:
-                errors.append((uid, idata["name"].squeeze()))
+            # Add metadata so that we can track this later
+            iactivity["cluster"] = idata["name"].squeeze()
+            iactivity["timescale"] = queryname
 
-    # Convert into a DF and do a little munging
-    activity = pd.concat(activity)
+            # Add to our list so that we concatenate across all clusters
+            activity.append(iactivity)
+        except Exception as e:
+            errors.append((uid, idata["name"].squeeze()))
 
-    # Write to a CSV for future ref
-    activity.to_csv(path_activity, index=False)
-    print(f"Finished loading hub activity data to {path_activity}...")
-    if errors:
-        serrors = "\n".join(f"- {error}" for error in errors)
-        print(f"The following clusters had errors: {serrors}")
-else:
-    print(f"Found data at {path_activity}, not downloading...")
+# Convert into a DF and do a little munging
+activity = pd.concat(activity)
+
+# Write to a CSV for future ref
+activity.to_csv(path_activity, index=False)
+print(f"Finished loading hub activity data to {path_activity}...")
+if errors:
+    serrors = "\n".join(f"- {error}" for error in errors)
+    print(f"The following clusters had errors: {serrors}")
