@@ -259,19 +259,26 @@ tags: [remove-cell]
 # VISUALIZATION HELPERS
 # =============================================================================
 
-def build_color_map(repos, palette=TWOC_PALETTE):
+def build_color_map(repos, palette=TWOC_PALETTE, color_by="org"):
     """
-    Assign colors to repositories, grouping by org.
-    All repos in the same org get the same color.
+    Assign colors to repositories.
+
+    Args:
+        repos: List of repo names (e.g., "jupyterhub/jupyterhub")
+        palette: List of colors to use
+        color_by: "org" to group by org, "repo" for unique colors per repo
     """
     if not repos:
         return {}
 
-    # Get unique orgs
-    orgs = sorted(set(r.split("/")[0] for r in repos if "/" in r))
-    org_colors = {org: palette[i % len(palette)] for i, org in enumerate(orgs)}
-
-    return {repo: org_colors.get(repo.split("/")[0], "#b0b0b0") for repo in repos}
+    if color_by == "org":
+        # Group by org - all repos in same org share a color
+        orgs = sorted(set(r.split("/")[0] for r in repos if "/" in r))
+        org_colors = {org: palette[i % len(palette)] for i, org in enumerate(orgs)}
+        return {repo: org_colors.get(repo.split("/")[0], "#b0b0b0") for repo in repos}
+    else:
+        # Each repo gets its own color
+        return {repo: palette[i % len(palette)] for i, repo in enumerate(repos)}
 
 
 def prepare_monthly_counts(df, date_col, top_n=12):
@@ -303,13 +310,18 @@ def prepare_monthly_counts(df, date_col, top_n=12):
     return counts, repo_order
 
 
-def stacked_bar_chart(df, repo_order, title):
-    """Create a stacked bar chart of monthly activity by repository."""
+def stacked_bar_chart(df, repo_order, title, color_by="org"):
+    """
+    Create a stacked bar chart of monthly activity by repository.
+
+    Args:
+        color_by: "org" to group colors by org, "repo" for unique colors per repo
+    """
     if df.empty:
         display(Markdown(f"*No data available for: {title}*"))
         return
 
-    color_map = build_color_map(repo_order)
+    color_map = build_color_map(repo_order, color_by=color_by)
 
     fig = px.bar(
         df,
@@ -566,7 +578,7 @@ Reflects where we're spending our time in 2i2c infrastructure repositories (thes
 ---
 tags: [remove-input]
 ---
-stacked_bar_chart(team_activity_data, team_activity_order, "Activity in 2i2c repositories (PRs merged + comments)")
+stacked_bar_chart(team_activity_data, team_activity_order, "Activity in 2i2c repositories (PRs merged + comments)", color_by="repo")
 ```
 
 **Table of issues and PRs that match the plot above**:
