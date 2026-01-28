@@ -92,6 +92,10 @@ df = pd.read_csv("data/hub-activity.csv")
 df = df[~df.hub.str.contains("staging")]
 df = df[~df.cluster.str.contains("prometheus")]
 
+# Remove utoronto/highmem - this hub had a data collection bug from Feb 6 to Apr 2, 2025
+# that was double-counting users from other hubs (see: https://github.com/2i2c-org/meta/issues/2818)
+df = df[~((df.cluster == "utoronto") & (df.hub == "highmem"))]
+
 # To make it easier to visualize these
 df["clusterhub"] = df.apply(lambda a: f"{a['cluster']}/{a['hub']}", axis=1)
 ```
