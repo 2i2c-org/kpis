@@ -361,7 +361,7 @@ df_clusters = df_clusters.query("users > 0")
 df_clusters["logusers"] = df_clusters["users"].map(np.log10)
 
 # List of clusters sorted by size
-sorted_clusters = df_clusters.groupby("cluster")["users"].mean().sort_values("users", ascending=False).index.values
+sorted_clusters = df_clusters.groupby("cluster")["users"].mean().sort_values(ascending=False).index.values
 ```
 
 `````{code-cell} ipython3

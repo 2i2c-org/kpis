@@ -33,14 +33,10 @@ if not api_key:
 
 # These correspond to AirTable URLs of the form:
 #   airtable.com/{{ BASE ID }}/{{ TABLE ID }}/{{VIEW ID}}
+# Only downloading tables that are actually used in the book (cloud.md)
 views = [
     ("communities", "appbjBTRIbgRiElkr", "tblYGygEo5PQBSUYt", "viw2F6xVWJujWKCuj"),
     ("locations", "appbjBTRIbgRiElkr", "tblNiMH0gYRVhVdhE", "viwYjmYFRWWJnrv8Y"),
-    # ("accounting", "appbjBTRIbgRiElkr", "tblNjmVbPaVmC7wc3", "viw1daKSu2dTcd5lg"),  # This table was deleted, so removing it for now
-    ("contracts", "appbjBTRIbgRiElkr", "tbliwB70vYg3hlkb1", "viwWPJhcFbXUJZUO6"),
-    ("leads", "appbjBTRIbgRiElkr", "tblmRU6U53i8o7z2I", "viw8xzzSXk8tPwBho"),
-    ("opportunities", "appbjBTRIbgRiElkr", "tblBTPDI1nKoq8wOL", "viwuJxmlTnW1VZxIm"),
-    ("sales", "appbjBTRIbgRiElkr", "tblBTPDI1nKoq8wOL", "viwcsrE83taP6GhSl"),
 ]
 
 ## Load in airtable

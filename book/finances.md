@@ -364,7 +364,7 @@ for fig in figures.values():
     fig.show()
 ```
 
-(undertanding-revenue)=
+(understanding-revenue)=
 ## Understanding revenue
 
 The plots above show our revenue projections under different assumptions, going 18 months into the future:
