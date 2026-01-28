@@ -88,8 +88,9 @@ tags: [remove-cell]
 # Load the data
 df = pd.read_csv("data/hub-activity.csv")
 
-# Remove staging hubs since those aren't relevant to stats
+# Remove staging hubs and prometheus clusters since those aren't relevant to stats
 df = df[~df.hub.str.contains("staging")]
+df = df[~df.cluster.str.contains("prometheus")]
 
 # To make it easier to visualize these
 df["clusterhub"] = df.apply(lambda a: f"{a['cluster']}/{a['hub']}", axis=1)
