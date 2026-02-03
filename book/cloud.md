@@ -390,6 +390,27 @@ slideshow:
   slide_type: ''
 tags: [remove-cell]
 ---
+def build_plotly_config(width, height, color=None, color_discrete_sequence=None):
+    config = dict(
+        lat="lat_jitter", lon="lon_jitter",
+        hover_name="Community",
+        hover_data={
+            "users": True,
+            "lat_jitter": False,
+            "lon_jitter": False,
+            "users_scaled": False,
+            "Location": True,
+        },
+        size="users_scaled",
+        width=width,
+        height=height,
+    )
+    if color is not None:
+        config["color"] = color
+    if color_discrete_sequence is not None:
+        config["color_discrete_sequence"] = color_discrete_sequence
+    return config
+
 def update_geo_fig(fig):
     """Modify the style of a geo plot for 2i2c branding."""
     fig.update_geos(oceancolor=colors["paleblue"], landcolor="white", subunitcolor="grey", bgcolor='rgba(0,0,0,0)', showland=True, showocean=True)
@@ -416,12 +437,10 @@ slideshow:
   slide_type: ''
 tags: [remove-input, full-width]
 ---
-plotly_config = dict(
-    lat="lat_jitter", lon="lon_jitter",
-    hover_name="Community", hover_data={"users": True, "lat_jitter": False, "lon_jitter": False, "users_scaled": False, "Location": True},
-    size="users_scaled", # size of markers, "pop" is one of the columns of gapminder
+plotly_config = build_plotly_config(
+    width=900,
+    height=500,
     color="Constellation",
-    width=900, height=500,
     color_discrete_sequence=qualitative.D3,
 )
 fig = px.scatter_geo(communities, projection="natural earth", **plotly_config)
@@ -445,14 +464,12 @@ tags: [remove-input, hide-output]
 ---
 # This cell is for generating PNG images that can be re-used elsewhere.
 # It will hide all the images under a dropdown so that it doesn't clutter the screen.
-from pathlib import Path
-plotly_config = dict(
-    lat="lat_jitter", lon="lon_jitter",
-    hover_name="Community", hover_data={"users": True, "lat_jitter": False, "lon_jitter": False, "users_scaled": False, "Location": True},
-    size="users_scaled", # size of markers, "pop" is one of the columns of gapminder
-    width=1500, height=800,
+plotly_config = build_plotly_config(
+    width=1500,
+    height=800,
+    color_discrete_sequence=["#e14e4f"],
 )
-fig = px.scatter_geo(communities, projection="natural earth", color_discrete_sequence=["#e14e4f"], **plotly_config)
+fig = px.scatter_geo(communities, projection="natural earth", **plotly_config)
 
 # Save our maps to the _static folder
 path_maps = Path("_static/maps/")
@@ -470,8 +487,12 @@ fig.show("png")
 
 
 for constellation, idata in communities.groupby("Constellation"):
-    fig = px.scatter_geo(idata, projection="natural earth", color_discrete_sequence=["#e14e4f"],
-                         title="", **plotly_config)
+    fig = px.scatter_geo(
+        idata,
+        projection="natural earth",
+        title="",
+        **plotly_config,
+    )
     path_file = f"_static/maps/{constellation}_map.png"
     display(Markdown(f"Constellation: **{constellation}**"))
     display(Markdown(f"Permanent link: {{download}}`2i2c.org/kpis{path_file} <{path_file}>`"))
