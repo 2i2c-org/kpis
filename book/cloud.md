@@ -49,12 +49,7 @@ import numpy as np
 import datetime
 from pathlib import Path
 import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-from textwrap import dedent
 from IPython.display import Markdown, display
-import requests
-from rich.progress import track
 import twoc
 from twoc import colors
 
@@ -162,6 +157,149 @@ tags: [full-width, remove-input]
 sorted_clusters = unique_hubs.groupby("cluster")["hubs"].max().sort_values(ascending=False).index.values
 
 px.area(unique_hubs, x="date", y="hubs", color="cluster", title="Number of active hubs by cluster", category_orders={"cluster": sorted_clusters})
+```
+
+
+## Active users
+
+Average monthly active users over the past 6 months.
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
+# Sum by cluster so we avoid having too many categories
+df_clusters = (
+    df.query("timescale == 'monthly'")
+    .groupby(["cluster", "date"])["users"]
+    .sum()
+    .reset_index()
+)
+
+# List of clusters sorted by size
+sorted_clusters = df_clusters.groupby("cluster")["users"].mean().sort_values(ascending=False).index.values
+```
+
+`````{code-cell} ipython3
+---
+editable: true
+mystnb:
+  markdown_format: myst
+slideshow:
+  slide_type: ''
+tags: [remove-input]
+---
+users = df_clusters.groupby("cluster")["users"].mean().sum()
+Markdown(f"""
+````{{grid}}
+:class-container: big-number
+
+```{{grid-item-card}} Monthly users
+{int(users)}
+```
+````
+""")
+`````
+
++++ {"editable": true, "slideshow": {"slide_type": ""}}
+
+Monthly active users over the past 6 months
+
+Raw data: {download}`data/hub-activity-mau.csv`.
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input, full-width]
+---
+df_daily = df.query("timescale == 'daily'").copy()
+df_daily["date"] = pd.to_datetime(df_daily["date"]).dt.to_period("M").dt.to_timestamp()
+mau_by_hub_month = (
+    df_daily.groupby(["cluster", "hub", "date"])["users"].mean().reset_index()
+)
+mau_by_hub_month.to_csv("data/hub-activity-mau.csv", index=False)
+bar = px.area(
+    df_clusters,
+    x="date",
+    y="users",
+    color="cluster",
+    category_orders={"cluster": sorted_clusters},
+    line_group="cluster",
+    title="Monthly users across all 2i2c clusters",
+    height=500
+)
+bar.show()
+```
+
++++ {"editable": true, "slideshow": {"slide_type": ""}}
+
+### Active users by hub
+
+Active users broken down by each hub that we run.
+We break our hubs into two groups as some hubs have orders of magnitude more users than others.
+
++++ {"editable": true, "slideshow": {"slide_type": ""}}
+
+#### Count hubs by community size
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-cell]
+---
+# Mean users for each hub
+df_sums = df.query("timescale == 'monthly'").groupby("clusterhub")["users"].mean().reset_index()
+
+# Calculate bins and add it to data for plotting 
+bins = [0, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
+labels = [f"{bins[ii]}-{bins[ii+1]}" for ii in range(len(bins)-1)]
+df_sums["bin"] = pd.cut(df_sums["users"], bins, labels=labels, right=False)
+max_y_bins = df_sums.groupby("bin").count()["users"].max() + 10
+```
+
++++ {"editable": true, "slideshow": {"slide_type": ""}}
+
+#### Total number of users binned by community size
+
+Tells us the percentage of our userbase that comes from different community sizes.
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input, remove-stderr, remove-stdout]
+---
+binned_data = df_sums.groupby("bin").size().reset_index(name="count")
+fig_bins = px.bar(
+    binned_data,
+    x="bin",
+    y="count",
+    title="Number of communities in bins of active users"
+)
+fig_bins.update_xaxes(title_text="Monthly Active Users", tickangle=-45)
+fig_bins.update_yaxes(title_text="Number of communities", range=[0, max_y_bins])
+fig_bins.show()
+
+bin_sums = df_sums.groupby("bin")["users"].sum()
+bin_sums = (bin_sums / bin_sums.sum()).reset_index()
+fig_perc = px.bar(
+    bin_sums,
+    x="bin",
+    y="users",
+    title="% Total Active Users by community size",
+    hover_data={"users": ":.0%"}
+)
+fig_perc.update_xaxes(title_text="Bin", tickangle=-45)
+fig_perc.update_yaxes(title_text="% of users", tickformat='.0%', range=[0, 1])
+fig_perc.show()
 ```
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}}
@@ -347,160 +485,6 @@ for constellation, idata in communities.groupby("Constellation"):
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}}
 
-## Active users
-
-Average active users over the past 6 months.
-
-```{code-cell} ipython3
----
-editable: true
-slideshow:
-  slide_type: ''
-tags: [remove-cell]
----
-# Sum by cluster so we avoid having too many categories
-df_clusters = df.groupby(["cluster", "date", "timescale"])["users"].sum().reset_index()
-
-# Add logusers
-df_clusters = df_clusters.query("users > 0")
-df_clusters["logusers"] = df_clusters["users"].map(np.log10)
-
-# List of clusters sorted by size
-sorted_clusters = df_clusters.groupby("cluster")["users"].mean().sort_values(ascending=False).index.values
-```
-
-`````{code-cell} ipython3
----
-editable: true
-mystnb:
-  markdown_format: myst
-slideshow:
-  slide_type: ''
-tags: [remove-input]
----
-grid = """
-````{grid}
-:class-container: big-number
-%s
-````
-"""
-scale_ordering = ["daily", "monthly"]
-interior = []
-for scale in scale_ordering:
-    users = df_clusters.query("timescale == @scale").groupby("cluster")["users"].mean().sum()
-    interior.append(dedent("""\
-    ```{grid-item-card} %s
-    %s
-    ```\
-    """ % (f"{scale.capitalize()} users", int(users))))
-Markdown(grid % "\n".join(interior))
-`````
-
-+++ {"editable": true, "slideshow": {"slide_type": ""}}
-
-Monthly active users over the past 6 months
-
-```{code-cell} ipython3
----
-editable: true
-slideshow:
-  slide_type: ''
-tags: [remove-input, full-width]
----
-for scale in ["monthly", "daily"]:
-    for kind in ["users", "logusers"]:
-        bar = px.area(
-            df_clusters.query("timescale == @scale"),
-            x="date",
-            y=kind,
-            color="cluster",
-            category_orders={"cluster": sorted_clusters},
-            line_group="cluster",
-            title=f"{scale.capitalize()} {kind} across all 2i2c clusters",
-            height=500
-        )
-        bar.show()
-```
-
-+++ {"editable": true, "slideshow": {"slide_type": ""}}
-
-### Active users by hub
-
-Active users broken down by each hub that we run.
-We break our hubs into two groups as some hubs have orders of magnitude more users than others.
-
-+++ {"editable": true, "slideshow": {"slide_type": ""}}
-
-#### Count hubs by community size
-
-```{code-cell} ipython3
----
-editable: true
-slideshow:
-  slide_type: ''
-tags: [remove-cell]
----
-# Mean users for each hub
-df_sums = df.groupby(["clusterhub", "timescale"])["users"].mean().reset_index()
-
-# Calculate bins and add it to data for plotting 
-bins = [0, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
-labels = [f"{bins[ii]}-{bins[ii+1]}" for ii in range(len(bins)-1)]
-df_sums["bin"] = pd.cut(df_sums["users"], bins, labels=labels, right=False)
-max_y_bins = df_sums.groupby(["timescale", "bin"]).count()["users"].max() + 10
-max_y_users = df_sums.groupby(["timescale", "bin"]).sum()["users"].max() + 100
-```
-
-+++ {"editable": true, "slideshow": {"slide_type": ""}}
-
-#### Total number of users binned by community size
-
-Tells us the percentage of our userbase that comes from different community sizes.
-
-```{code-cell} ipython3
----
-editable: true
-slideshow:
-  slide_type: ''
-tags: [remove-input, remove-stderr, remove-stdout]
----
-groups = df_sums.groupby("timescale")
-
-# Create subplots for number of communities in bins
-fig_bins = make_subplots(rows=1, cols=len(scale_ordering), subplot_titles=[s.capitalize() for s in scale_ordering])
-for i, scale in enumerate(scale_ordering, 1):
-    idata = groups.get_group(scale).copy()
-    binned_data = idata.groupby('bin').size().reset_index(name='count')
-    fig_bins.add_trace(
-        go.Bar(x=binned_data['bin'].astype(str), y=binned_data['count'], name=scale),
-        row=1, col=i
-    )
-    fig_bins.update_xaxes(title_text=f"{scale.capitalize()} Active Users", tickangle=-45, row=1, col=i)
-    fig_bins.update_yaxes(title_text="Number of communities", range=[0, max_y_bins], row=1, col=i)
-fig_bins.update_layout(title_text="Number of communities in bins of active users", showlegend=False)
-fig_bins.show()
-
-# Create subplots for percentage breakdown
-fig_perc = make_subplots(rows=1, cols=len(scale_ordering), subplot_titles=[s.capitalize() for s in scale_ordering])
-for i, scale in enumerate(scale_ordering, 1):
-    idata = groups.get_group(scale).copy()
-    bin_sums = idata.groupby("bin").sum()["users"]
-    bin_sums = bin_sums / bin_sums.sum()
-    bin_sums = bin_sums.reset_index()
-    fig_perc.add_trace(
-        go.Bar(
-            x=bin_sums['bin'].astype(str),
-            y=bin_sums['users'],
-            name=scale,
-            hovertemplate='%{x}<br>%{y:.0%}<extra></extra>'
-        ),
-        row=1, col=i
-    )
-    fig_perc.update_xaxes(title_text="Bin", tickangle=-45, row=1, col=i)
-    fig_perc.update_yaxes(title_text="% of users", tickformat='.0%', range=[0, 1], row=1, col=i)
-fig_perc.update_layout(title_text="% Total Active Users by community size", showlegend=False)
-fig_perc.show()
-```
 
 ### Date of First Value
 

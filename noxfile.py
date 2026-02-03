@@ -38,6 +38,6 @@ def docs_live(session):
     session.run(*split("python book/scripts/download_upstream_data.py"))
     session.run(
         *split(
-            "sphinx-autobuild -b dirhtml book book/_build/dirhtml --ignore */book/data/*"
+            "sphinx-autobuild -b dirhtml book book/_build/dirhtml --ignore */book/data/* --ignore data/key-communities.toml"
         )
     )
