@@ -149,6 +149,7 @@ book/data/css-accounting-cleaned.csv
 book/data/airtable-*.csv
 book/data/css-accounting
 book/data/jupyter/*
+book/data/hub-*
 
 # A place to manually store data we use as part of data updating
 book/scripts/_data/
