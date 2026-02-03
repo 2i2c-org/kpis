@@ -345,8 +345,6 @@ for ix, irow in communities.iterrows():
 
     # Grab the average number of monthly users for this community across all clusters/hubs
     hubs = df.query("clusterhub in @clusterhub and timescale == 'monthly'")
-    # Average across time for each hub, and then add across all hubs
-    hubs = df.query("clusterhub in @clusterhub and timescale == 'monthly'")
     n_users = hubs.groupby("clusterhub")["users"].mean().sum().round()
     communities.loc[ix, "users"] = n_users
 ```
