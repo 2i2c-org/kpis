@@ -45,11 +45,6 @@ intersphinx_mapping = {
     "tc": ("https://compass.2i2c.org/en/latest/", None),
 }
 
-# Ensure key communities is downloaded
-from subprocess import run
-
-run(["python", "download_key_communities.py"], cwd="scripts", check=True)
-
 
 def setup(app):
     # Load RequireJS for interactive visualizations
