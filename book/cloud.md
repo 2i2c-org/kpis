@@ -22,7 +22,7 @@ kernelspec:
 }
 </style>
 
-# JupyterHub usage
+# Cloud and hub usage
 
 This displays the usage of our cloud infrastructure to give an understanding of our infrastructure setup and the communities that use it.
 
@@ -30,11 +30,19 @@ Last updated: **{sub-ref}`today`**
 
 ```{admonition} Data source
 :class: dropdown
+
+Raw data:
+
+- {download}`data/maus-by-hub.csv`
+- {download}`data/maus-unique-by-cluster.csv`.
+
 This data is pulled from these two sources:
 
 1. The list of our hubs and clusters is pulled from [our `infrastructure/` repository](https://github.com/2i2c-org/infrastructure/tree/master/config/clusters).
 2. The active users data stream produced by JupyterHub and exposed at `metrics/`.
    [See this PR for the feature](https://github.com/jupyterhub/jupyterhub/pull/4214).
+
+See `book/scripts/cloud/download.py` for details on how data is collected and deduplicated.
 ```
 
 ```{code-cell} ipython3
@@ -51,16 +59,13 @@ from pathlib import Path
 import plotly.express as px
 from IPython.display import Markdown, display
 import twoc
-from twoc import colors
 
 twoc.set_plotly_defaults()
 ```
 
-+++ {"editable": true, "slideshow": {"slide_type": ""}}
++++ {"editable": true, "slideshow": {"slide_type": ""}, "tags": ["remove-cell"]}
 
 ## Load and munge data
-
-Raw data: {download}`data/hub-activity.csv`.
 
 ```{code-cell} ipython3
 ---
@@ -81,7 +86,7 @@ slideshow:
 tags: [remove-cell]
 ---
 # Load the data
-df = pd.read_csv("data/hub-activity.csv")
+df = pd.read_csv("data/maus-by-hub.csv")
 
 # Remove staging hubs and prometheus clusters since those aren't relevant to stats
 df = df[~df.hub.str.contains("staging")]
@@ -93,11 +98,76 @@ df = df[~((df.cluster == "utoronto") & (df.hub == "highmem"))]
 
 # To make it easier to visualize these
 df["clusterhub"] = df.apply(lambda a: f"{a['cluster']}/{a['hub']}", axis=1)
+
+# Load unique users per cluster (deduplicated across hubs)
+df_unique = pd.read_csv("data/maus-unique-by-cluster.csv")
+df_unique["date"] = pd.to_datetime(df_unique["date"])
 ```
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}}
 
-## Number of hubs
+## Active users
+
+Unique monthly active users for each cluster.
+Clusters roughly map onto member communities (several of which have several sub-communities and hubs underneath them).
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [remove-input, full-width]
+---
+sorted_unique = df_unique.groupby("cluster")["unique_users"].mean().sort_values(ascending=False).index.values
+fig = px.area(
+    df_unique,
+    x="date",
+    y="unique_users",
+    color="cluster",
+    category_orders={"cluster": sorted_unique},
+    title="Unique monthly users across all 2i2c clusters",
+    labels={"unique_users": "users"},
+    height=500,
+)
+# Add a button to toggle between linear and log y-axis
+fig.update_layout(
+    updatemenus=[
+        dict(
+            type="buttons",
+            direction="left",
+            x=0.0, y=1.15,
+            buttons=[
+                dict(label="Linear", method="relayout", args=[{"yaxis.type": "linear"}]),
+                dict(label="Log", method="relayout", args=[{"yaxis.type": "log"}]),
+            ],
+        )
+    ]
+)
+fig.show()
+```
+
+Click the dropdown for a list of month-end unique MAU counts, and see the dropdown at the top of the page for the raw data.
+
+```{code-cell} ipython3
+---
+tags: [remove-input, hide-output]
+---
+# Filter to month-end dates only for the summary table
+df_month_end = df_unique[df_unique["date"].dt.is_month_end]
+
+# Pivot so clusters are columns and dates are rows
+table = df_month_end.pivot(index="date", columns="cluster", values="unique_users")
+table.index = table.index.strftime("%Y-%m")
+table = table.fillna(0).astype(int)
+table["Total"] = table.sum(axis=1)
+display(table)
+```
+
++++ {"editable": true, "slideshow": {"slide_type": ""}}
+
+## Number of clusters and hubs we run
+
+Multiple hubs are often run on a single cluster (e.g. a community with many sub-communities, one hub per class at an institution, etc).
 
 ```{code-cell} ipython3
 ---
@@ -107,7 +177,7 @@ slideshow:
 tags: [remove-cell]
 ---
 # Number of hubs on each cluster over time
-unique_hubs = df.query("timescale == 'monthly'").groupby(["cluster", "date"]).nunique("clusterhub")["clusterhub"].to_frame("hubs").reset_index()
+unique_hubs = df.groupby(["cluster", "date"]).nunique("clusterhub")["clusterhub"].to_frame("hubs").reset_index()
 unique_hubs["date"] = pd.to_datetime(unique_hubs["date"])
 ```
 
@@ -159,91 +229,14 @@ sorted_clusters = unique_hubs.groupby("cluster")["hubs"].max().sort_values(ascen
 px.area(unique_hubs, x="date", y="hubs", color="cluster", title="Number of active hubs by cluster", category_orders={"cluster": sorted_clusters})
 ```
 
-
-## Active users
-
-Average monthly active users over the past 6 months.
-
-```{code-cell} ipython3
----
-editable: true
-slideshow:
-  slide_type: ''
-tags: [remove-cell]
----
-# Sum by cluster so we avoid having too many categories
-df_clusters = (
-    df.query("timescale == 'monthly'")
-    .groupby(["cluster", "date"])["users"]
-    .sum()
-    .reset_index()
-)
-
-# List of clusters sorted by size
-sorted_clusters = df_clusters.groupby("cluster")["users"].mean().sort_values(ascending=False).index.values
-```
-
-`````{code-cell} ipython3
----
-editable: true
-mystnb:
-  markdown_format: myst
-slideshow:
-  slide_type: ''
-tags: [remove-input]
----
-users = df_clusters.groupby("cluster")["users"].mean().sum()
-Markdown(f"""
-````{{grid}}
-:class-container: big-number
-
-```{{grid-item-card}} Monthly users
-{int(users)}
-```
-````
-""")
-`````
-
 +++ {"editable": true, "slideshow": {"slide_type": ""}}
 
-Monthly active users over the past 6 months
-
-Raw data: {download}`data/hub-activity-mau.csv`.
-
-```{code-cell} ipython3
----
-editable: true
-slideshow:
-  slide_type: ''
-tags: [remove-input, full-width]
----
-df_daily = df.query("timescale == 'daily'").copy()
-df_daily["date"] = pd.to_datetime(df_daily["date"]).dt.to_period("M").dt.to_timestamp()
-mau_by_hub_month = (
-    df_daily.groupby(["cluster", "hub", "date"])["users"].mean().reset_index()
-)
-mau_by_hub_month.to_csv("data/hub-activity-mau.csv", index=False)
-bar = px.area(
-    df_clusters,
-    x="date",
-    y="users",
-    color="cluster",
-    category_orders={"cluster": sorted_clusters},
-    line_group="cluster",
-    title="Monthly users across all 2i2c clusters",
-    height=500
-)
-bar.show()
-```
-
-+++ {"editable": true, "slideshow": {"slide_type": ""}}
-
-### Active users by hub
+### Active users per hub
 
 Active users broken down by each hub that we run.
-We break our hubs into two groups as some hubs have orders of magnitude more users than others.
+Gives an idea of whether we have many hubs with few users, vs. a few hubs with a ton of users.
 
-+++ {"editable": true, "slideshow": {"slide_type": ""}}
++++ {"editable": true, "slideshow": {"slide_type": ""}, "tags": ["remove-cell"]}
 
 #### Count hubs by community size
 
@@ -255,7 +248,7 @@ slideshow:
 tags: [remove-cell]
 ---
 # Mean users for each hub
-df_sums = df.query("timescale == 'monthly'").groupby("clusterhub")["users"].mean().reset_index()
+df_sums = df.groupby("clusterhub")["users"].mean().reset_index()
 
 # Calculate bins and add it to data for plotting 
 bins = [0, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
@@ -264,11 +257,9 @@ df_sums["bin"] = pd.cut(df_sums["users"], bins, labels=labels, right=False)
 max_y_bins = df_sums.groupby("bin").count()["users"].max() + 10
 ```
 
-+++ {"editable": true, "slideshow": {"slide_type": ""}}
++++ {"editable": true, "slideshow": {"slide_type": ""}, "tags": ["remove-cell"]}
 
-#### Total number of users binned by community size
-
-Tells us the percentage of our userbase that comes from different community sizes.
+#### Number of hubs binned by size
 
 ```{code-cell} ipython3
 ---
@@ -282,302 +273,11 @@ fig_bins = px.bar(
     binned_data,
     x="bin",
     y="count",
-    title="Number of communities in bins of active users"
+    title="Number of hubs in bins of active users"
 )
 fig_bins.update_xaxes(title_text="Monthly Active Users", tickangle=-45)
-fig_bins.update_yaxes(title_text="Number of communities", range=[0, max_y_bins])
+fig_bins.update_yaxes(title_text="Number of hubs", range=[0, max_y_bins])
 fig_bins.show()
-
-bin_sums = df_sums.groupby("bin")["users"].sum()
-bin_sums = (bin_sums / bin_sums.sum()).reset_index()
-fig_perc = px.bar(
-    bin_sums,
-    x="bin",
-    y="users",
-    title="% Total Active Users by community size",
-    hover_data={"users": ":.0%"}
-)
-fig_perc.update_xaxes(title_text="Bin", tickangle=-45)
-fig_perc.update_yaxes(title_text="% of users", tickformat='.0%', range=[0, 1])
-fig_perc.show()
 ```
 
-+++ {"editable": true, "slideshow": {"slide_type": ""}}
 
-### Geographic map of community locations
-
-Below is a visualization that represents the hubs
-
-```{code-cell} ipython3
----
-editable: true
-slideshow:
-  slide_type: ''
-tags: [remove-cell]
----
-from plotly.express.colors import qualitative
-```
-
-```{code-cell} ipython3
----
-editable: true
-slideshow:
-  slide_type: ''
-tags: [remove-cell]
----
-# Load the latest AirTable data
-communities = pd.read_csv("./data/airtable-communities.csv")
-
-# Clean up a bit
-communities = communities.rename(columns={"domain (from Hubs)": "domain"})
-
-# Drop communities that are missing location/hubs/domains from hubs
-communities = communities.dropna(subset=["Location", "Hubs", "domain"])
-for col in ["id", "domain", "Location"]:
-    communities[col] = communities[col].map(lambda a: eval(a))
-communities["Location"] = communities["Location"].map(lambda a: a[0])
-
-# Calculate the number of users for each hub
-for ix, irow in communities.iterrows():
-    clusters = eval(irow["cluster"])
-    hubs = irow["id"]
-    clusterhub = [f"{a}/{b}" for a, b in zip(clusters, hubs)]
-
-    # Grab the average number of monthly users for this community across all clusters/hubs
-    hubs = df.query("clusterhub in @clusterhub and timescale == 'monthly'")
-    n_users = hubs.groupby("clusterhub")["users"].mean().sum().round()
-    communities.loc[ix, "users"] = n_users
-```
-
-```{code-cell} ipython3
-:tags: [remove-cell]
-
-# Read in locations data and link it to our communities
-locations = pd.read_csv("./data/airtable-locations.csv")
-communities = pd.merge(communities, locations[["aid", "Latitude", "Longitude"]], left_on="Location", right_on="aid", how="left")
-
-# Rename Lattitude and Longitude to be easier to work with
-communities = communities.rename(columns={"Latitude": "lat", "Longitude": "lon"})
-```
-
-```{code-cell} ipython3
----
-editable: true
-slideshow:
-  slide_type: ''
-tags: [remove-cell]
----
-# Drop any records without users because these aren't valid
-missing_records = communities["users"].isnull()
-print(f"Dropping {missing_records.sum()} records with missing users...")
-communities = communities.loc[~missing_records]
-
-# Add a log-scaled column to ease plotting
-communities["users_scaled"] = np.log10(communities["users"])
-
-# Drop communities that have 0 users
-communities = communities[communities["users_scaled"] != -np.inf]
-
-# Add XY jitter so that overlapping hubs don't totally block each other
-communities['lat_jitter'] = communities['lat'].map(lambda a: a + np.random.normal(0, 0.2))
-communities['lon_jitter'] = communities['lon'].map(lambda a: a + np.random.normal(0, 0.2))
-```
-
-```{code-cell} ipython3
----
-editable: true
-slideshow:
-  slide_type: ''
-tags: [remove-cell]
----
-def build_plotly_config(width, height, color=None, color_discrete_sequence=None):
-    config = dict(
-        lat="lat_jitter", lon="lon_jitter",
-        hover_name="Community",
-        hover_data={
-            "users": True,
-            "lat_jitter": False,
-            "lon_jitter": False,
-            "users_scaled": False,
-            "Location": True,
-        },
-        size="users_scaled",
-        width=width,
-        height=height,
-    )
-    if color is not None:
-        config["color"] = color
-    if color_discrete_sequence is not None:
-        config["color_discrete_sequence"] = color_discrete_sequence
-    return config
-
-def update_geo_fig(fig):
-    """Modify the style of a geo plot for 2i2c branding."""
-    fig.update_geos(oceancolor=colors["paleblue"], landcolor="white", subunitcolor="grey", bgcolor='rgba(0,0,0,0)', showland=True, showocean=True)
-    fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)"
-)
-
-def update_png_fig(fig):
-    """Update a plot for printing to a PNG."""
-    # Set minimum marker size
-    fig.update_traces(
-        marker=dict(
-            sizemin=10,
-        )
-    )
-    # Remove margin on PNG exports
-    fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
-```
-
-```{code-cell} ipython3
----
-editable: true
-raw_mimetype: ''
-slideshow:
-  slide_type: ''
-tags: [remove-input, full-width]
----
-plotly_config = build_plotly_config(
-    width=900,
-    height=500,
-    color="Constellation",
-    color_discrete_sequence=qualitative.D3,
-)
-fig = px.scatter_geo(communities, projection="natural earth", **plotly_config)
-fig2 = px.scatter_geo(communities, projection="albers usa", **plotly_config)
-
-for fig in [fig, fig2]:
-    update_geo_fig(fig)
-    fig.show()
-```
-
-+++ {"editable": true, "slideshow": {"slide_type": ""}}
-
-Below is a dropdown with a few PNGs of different hub constellations for re-use.
-
-```{code-cell} ipython3
----
-editable: true
-slideshow:
-  slide_type: ''
-tags: [remove-input, hide-output]
----
-# This cell is for generating PNG images that can be re-used elsewhere.
-# It will hide all the images under a dropdown so that it doesn't clutter the screen.
-plotly_config = build_plotly_config(
-    width=1500,
-    height=800,
-    color_discrete_sequence=["#e14e4f"],
-)
-fig = px.scatter_geo(communities, projection="natural earth", **plotly_config)
-
-# Save our maps to the _static folder
-path_maps = Path("_static/maps/")
-path_maps.mkdir(parents=True, exist_ok=True)
-path_file = path_maps / f"2i2c_hubs_map.png"
-update_geo_fig(fig)
-update_png_fig(fig)
-fig.write_image(path_file)
-
-# Output for the cell
-display(Markdown(f"**All 2i2c hubs**"))
-display(Markdown(f"Permanent link: {{download}}`2i2c.org/kpis{path_file} <{path_file}>`"))
-update_geo_fig(fig)
-fig.show("png")
-
-
-for constellation, idata in communities.groupby("Constellation"):
-    fig = px.scatter_geo(
-        idata,
-        projection="natural earth",
-        title="",
-        **plotly_config,
-    )
-    path_file = f"_static/maps/{constellation}_map.png"
-    display(Markdown(f"Constellation: **{constellation}**"))
-    display(Markdown(f"Permanent link: {{download}}`2i2c.org/kpis{path_file} <{path_file}>`"))
-    update_geo_fig(fig)
-    update_png_fig(fig)
-    fig.show("png")
-    fig.write_image(path_file)
-```
-
-+++ {"editable": true, "slideshow": {"slide_type": ""}}
-
-
-### Date of First Value
-
-+++
-
-When the number of Monthly Active Users (MAUs) >= 5, assume the community is actively using the their hub.
-
-```{code-cell} ipython3
-:tags: [remove-cell]
-df['date'] = pd.to_datetime(df['date'])
-
-# Define cutoff = one year ago
-cutoff = pd.Timestamp.today() - pd.Timedelta(days=365)
-
-# Get all (cluster, hub) combos
-all_groups = df.groupby(['cluster', 'hub'])
-
-# Compute earliest date where users > 4
-first_dates = (
-    df[df['users'] > 4]
-    .groupby(['cluster', 'hub'])['date']
-    .min()
-    .reset_index()
-    .rename(columns={'date': 'first_value_date'})
-)
-
-# Merge back to include hubs with no qualifying rows
-result = (
-    all_groups.size()
-    .reset_index()
-    .merge(first_dates, on=['cluster', 'hub'], how='left')
-)
-
-# Apply logic
-def classify_date(d):
-    if pd.isna(d):
-        return "MAUs < 5"
-    elif d < cutoff:
-        return "More than 1 year ago"
-    else:
-        return d.strftime('%Y-%m-%d')
-
-result['first_value_date'] = result['first_value_date'].apply(classify_date)
-
-# Drop the helper column (the size)
-result = result[['cluster', 'hub', 'first_value_date']]
-```
-
-```{code-cell} ipython3
-:tags: [remove-input]
-import ipywidgets as widgets
-from IPython.display import display
-
-# Dropdown with unique clusters
-cluster_dropdown = widgets.Dropdown(
-    options=['All'] + sorted(result['cluster'].unique().tolist()),
-    description='Cluster:'
-)
-
-# Output area
-output = widgets.Output()
-
-def update_table(change):
-    with output:
-        output.clear_output()
-        if change['new'] == 'All':
-            display(result)
-        else:
-            display(result[result['cluster'] == change['new']])
-
-cluster_dropdown.observe(update_table, names='value')
-
-# Initial display
-display(cluster_dropdown)
-update_table({'new': 'All'})
-display(output)
-```

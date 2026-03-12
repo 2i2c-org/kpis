@@ -7,12 +7,14 @@ nox.options.reuse_existing_virtualenvs = True
 
 @nox.session
 def lab(session):
+    """Launch JupyterLab for interactive exploration."""
     session.install("-r", "requirements.txt")
     session.run(*split("jupyter lab"))
 
 
 @nox.session
 def docs(session):
+    """Generate static HTML of the documentation."""
     session.install("-r", "requirements.txt")
     env = {}
     if "github" in session.posargs:
@@ -23,10 +25,11 @@ def docs(session):
 
 @nox.session
 def data(session):
+    """Download data that we need for the book."""
     session.install("-r", "requirements.txt")
-    session.run(*split("python book/scripts/download_airtable_data.py"))
     session.run(*split("python book/scripts/download_hubspot_data.py"))
-    session.run(*split("python book/scripts/download_grafana_activity.py"))
+    session.run(*split("python book/scripts/cloud/download.py"))
+    session.run(*split("python book/scripts/cloud/validate.py"))
     session.run(*split("python book/scripts/download_upstream_data.py"))
 
 
@@ -38,6 +41,6 @@ def docs_live(session):
     session.run(*split("python book/scripts/download_upstream_data.py"))
     session.run(
         *split(
-            "sphinx-autobuild -b dirhtml book book/_build/dirhtml --ignore */book/data/* --ignore data/key-communities.toml"
+            "sphinx-autobuild -b dirhtml book book/_build/dirhtml --ignore *.csv --ignore *.toml"
         )
     )
