@@ -135,22 +135,7 @@ dmypy.json
 */_build
 
 # Data files bundled with this tool that we don't want to check in
-book/data/github-activity.csv
-book/data/hub-activity.csv
-book/data/key-communities.toml
-book/data/hubspot-deals.json
-book/data/airtable-communities.csv
-book/data/city-locations.csv
-
-# For monthly accounting data from CSS
-# We load this into AirTable and then pull it into our book script
-book/data/css-accounting.csv
-book/data/css-accounting-cleaned.csv
-book/data/airtable-*.csv
-book/data/css-accounting
-book/data/jupyter/*
-book/data/hub-*
-book/data/maus-*
+book/data/
 
 # A place to manually store data we use as part of data updating
 book/scripts/_data/

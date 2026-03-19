@@ -41,8 +41,6 @@ This data is pulled from these two sources:
 1. The list of our hubs and clusters is pulled from [our `infrastructure/` repository](https://github.com/2i2c-org/infrastructure/tree/master/config/clusters).
 2. The active users data stream produced by JupyterHub and exposed at `metrics/`.
    [See this PR for the feature](https://github.com/jupyterhub/jupyterhub/pull/4214).
-
-See `book/scripts/cloud/download.py` for details on how data is collected and deduplicated.
 ```
 
 ```{code-cell} ipython3
@@ -96,12 +94,18 @@ df = df[~df.cluster.str.contains("prometheus")]
 # that was double-counting users from other hubs (see: https://github.com/2i2c-org/meta/issues/2818)
 df = df[~((df.cluster == "utoronto") & (df.hub == "highmem"))]
 
+# Drop rows with zero users (clusters that didn't exist yet)
+df = df[df["users"] > 0]
+
 # To make it easier to visualize these
 df["clusterhub"] = df.apply(lambda a: f"{a['cluster']}/{a['hub']}", axis=1)
 
 # Load unique users per cluster (deduplicated across hubs)
 df_unique = pd.read_csv("data/maus-unique-by-cluster.csv")
 df_unique["date"] = pd.to_datetime(df_unique["date"])
+
+# Drop rows with zero users (clusters that didn't exist yet)
+df_unique = df_unique[df_unique["unique_users"] > 0]
 ```
 
 +++ {"editable": true, "slideshow": {"slide_type": ""}}

@@ -22,13 +22,12 @@ This document shows 2i2c's revenue projections by contract and predicts monthly 
 :class: dropdown
 To see the visualizations locally, follow these steps:
 
-1. Export a HubSpot private app token as `HUBSPOT_ACCESS_TOKEN` (or `HUBSPOT_TOKEN`).
-2. Download the latest data (cached to `book/data/hubspot-deals.json`):
+1. Download the latest data:
 
    ```bash
-   python book/scripts/download_hubspot_data.py
+   nox -s data
    ```
-3. Run this notebook from top to bottom.
+2. Run this notebook from top to bottom.
 
 Important fields in HubSpot:
 
@@ -48,7 +47,6 @@ tags: [remove-cell]
 ---
 import datetime
 import os
-import json
 from datetime import timedelta
 from pathlib import Path
 
@@ -91,18 +89,14 @@ slideshow:
   slide_type: ''
 tags: [remove-cell]
 ---
-# Read cached HubSpot deals (refresh via scripts/download_hubspot_data.py)
-data_path = Path("./data/hubspot-deals.json")
+# Read cached HubSpot deals (refresh via `nox -s data`)
+data_path = Path("./data/hubspot-deals.csv")
 if not data_path.exists():
     raise FileNotFoundError(
-        "Missing book/data/hubspot-deals.json. Run scripts/download_hubspot_data.py first."
+        "Missing book/data/hubspot-deals.csv. Run `nox -s data` first."
     )
 
-with data_path.open() as f:
-    deals_raw = json.load(f)
-
-deals = pd.json_normalize(deals_raw["results"])
-deals.columns = deals.columns.str.replace("properties.", "")
+deals = pd.read_csv(data_path)
 deals = deals.rename(columns={"dealname": "Name"})
 
 keep_cols = [

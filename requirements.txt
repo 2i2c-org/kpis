@@ -33,11 +33,8 @@ jupyterlab-code-formatter
 jupyterlab-myst
 jupytext
 
-# For loading grafana data
-python-dotenv
-prometheus-pandas
+# For downloading data
 requests
-hubspot-api-client
 
 # For downloading Google Sheets
 openpyxl
