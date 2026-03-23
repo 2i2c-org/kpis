@@ -147,6 +147,13 @@ fig.update_layout(
         )
     ]
 )
+totals = df_unique.groupby("date")["unique_users"].sum().reset_index()
+fig.add_scatter(
+    x=totals["date"], y=totals["unique_users"],
+    mode="lines", line=dict(width=0),
+    name="Total", hoverinfo="y+name",
+    showlegend=True,
+)
 fig.show()
 ```
 
