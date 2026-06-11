@@ -62,7 +62,7 @@ jobs:
       - name: Download dashboard data
         run: nox -s data
         env:
-          GH_TOKEN: ${{ secrets.GH_DATA_PRIVATE_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
 
       # Build the site
       - name: Build the Sphinx site
@@ -86,11 +86,6 @@ jobs:
             staticrypt book/_build/dirhtml/people/index.html -p ${{ secrets.STATICRYPT_PASSWORD }} -d book/_build/dirhtml/people/ --short --template-color-primary "#1D4EF5" --template-title "Only for the 2i2c team!" --template-instructions "Check the team BitWarden for the password...";
           else
             echo "Skipping people encryption; missing book/_build/dirhtml/people/index.html"
-          fi
-          if [ -f book/_build/dirhtml/finances/index.html ]; then
-            staticrypt book/_build/dirhtml/finances/index.html -p ${{ secrets.STATICRYPT_PASSWORD }} -d book/_build/dirhtml/finances/ --short --template-color-primary "#1D4EF5" --template-title "Only for the 2i2c team!" --template-instructions "Check the team BitWarden for the password...";
-          else
-            echo "Skipping finances encryption; missing book/_build/dirhtml/finances/index.html"
           fi
 
       # Upload artifact for looking at later

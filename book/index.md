@@ -14,8 +14,8 @@ These are tools from the [ExecutableBooks project](https://executablebooks.org),
 Our currently running infrastructure and active users over time.
 ```
 ```{grid-item-card} Accounting analysis 📈
-:link: finances/
-:link-type: doc
+:link: https://finance.2i2c.org
+:link-type: url
 %
 Our financial activity, including our costs and revenue broken down by category.
 ```
@@ -34,7 +34,6 @@ Below is a breakdown of the categories above with more information about their s
 
 cloud
 upstream
-finances
 marketing
 people
 ```

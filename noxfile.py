@@ -37,15 +37,6 @@ def data(session):
         "--clobber",
         external=True,
     )
-    # Download HubSpot data from data-private releases
-    session.run(
-        "gh", "release", "download", "hubspot-latest",
-        "--repo", "2i2c-org/data-private",
-        "--pattern", "hubspot-deals.csv",
-        "--dir", data_dir,
-        "--clobber",
-        external=True,
-    )
     session.run(*split("python book/scripts/cloud/validate.py"))
     session.run(*split("python book/scripts/download_upstream_data.py"))
 
