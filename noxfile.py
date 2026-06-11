@@ -28,10 +28,10 @@ def data(session):
     """Download data that we need for the book."""
     session.install("-r", "requirements.txt")
     data_dir = "book/data"
-    # Download MAU data from data-private releases
+    # Download MAU data from the 2i2c-org/data releases
     session.run(
-        "gh", "release", "download", "maus-latest",
-        "--repo", "2i2c-org/data-private",
+        "gh", "release", "download", "cloud",
+        "--repo", "2i2c-org/data",
         "--pattern", "maus-*.csv",
         "--dir", data_dir,
         "--clobber",
