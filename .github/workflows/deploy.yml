@@ -62,7 +62,8 @@ jobs:
       - name: Download dashboard data
         run: nox -s data
         env:
-          GH_TOKEN: ${{ github.token }}
+          # Needs read access to 2i2c-org/data-private releases
+          GH_TOKEN: ${{ secrets.TOKEN_GITHUB_API_READONLY }}
 
       # Build the site
       - name: Build the Sphinx site

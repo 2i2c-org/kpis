@@ -6,8 +6,6 @@ linkify-it-py
 tomlkit
 
 # To run the code
-# Used by the upstream downloader for cached GitHub release assets.
-pooch
 geopandas
 ghapi
 ipywidgets

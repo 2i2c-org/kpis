@@ -75,7 +75,6 @@ from subprocess import run
 
 import numpy as np
 import pandas as pd
-from yaml import safe_load
 ```
 
 ```{code-cell} ipython3
@@ -106,8 +105,7 @@ def strip_ansi(text):
 
 
 json = loads(strip_ansi(out.stdout))
-team = safe_load(Path("data/team.yml").read_text())
-team = [ii.lower() for ii in team]
+team = pd.read_csv("data/team.csv")["GitHub"].dropna().str.lower().tolist()
 ```
 
 ```{code-cell} ipython3

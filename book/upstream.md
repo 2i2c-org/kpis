@@ -42,7 +42,6 @@ import plotly.express as px
 from IPython.display import Markdown, display
 import twoc
 from twoc import colors as twoc_colors
-from yaml import safe_load
 
 twoc.set_plotly_defaults()
 
@@ -68,12 +67,9 @@ tags: [remove-cell]
 # DATA LOADING FUNCTIONS
 # =============================================================================
 # These functions load GitHub activity data from SQLite databases.
-# The databases are downloaded by: python book/scripts/download_upstream_data.py
-# (or via `nox -s data`)
-#
-# Data sources:
-# - jupyter/github-data: Activity in Jupyter ecosystem repos
-# - 2i2c-org/github-data: Activity in 2i2c's own repos
+# The databases come from the `github-latest` release of 2i2c-org/data-private
+# (downloaded by `nox -s data`). `2i2c-org.db` is our own org; the rest are
+# Jupyter ecosystem orgs mirrored from jupyter/github-data.
 #
 # Database tables: users, repos, pull_requests, issues, issue_comments
 
@@ -218,8 +214,8 @@ tags: [remove-cell]
 # =============================================================================
 # LOAD DATA
 # =============================================================================
-# Load team member GitHub logins from config file
-team_logins = safe_load(Path("data/team.yml").read_text())
+# Team member GitHub logins, from the `team-latest` release of data-private
+team_logins = pd.read_csv("data/team.csv")["GitHub"].dropna().tolist()
 
 # Define date ranges: full year for charts, recent 2 months for tables
 today = pd.Timestamp.utcnow().normalize()
@@ -227,15 +223,13 @@ start_year = today - pd.DateOffset(years=1)
 start_recent = today - pd.DateOffset(months=2)
 start_year_str = start_year.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-# Load upstream data (downloaded by: nox -s data, or scripts/download_upstream_data.py)
-jupyter_db_paths = sorted((DATA_ROOT / "jupyter").glob("*.db"))
-team_db_paths = sorted((DATA_ROOT / "2i2c").glob("*.db"))
+# Load upstream data (downloaded by `nox -s data`)
+db_paths = sorted(DATA_ROOT.glob("*.db"))
+team_db_paths = [p for p in db_paths if p.stem == "2i2c-org"]
+jupyter_db_paths = [p for p in db_paths if p.stem != "2i2c-org"]
 
 if not jupyter_db_paths:
-    raise FileNotFoundError(
-        f"No database files found in {DATA_ROOT / 'jupyter'}. "
-        "Run `nox -s data` or `python book/scripts/download_upstream_data.py` first."
-    )
+    raise FileNotFoundError(f"No database files found in {DATA_ROOT}. Run `nox -s data` first.")
 
 prs_jupyter, comments_jupyter, issues_jupyter = load_activity(
     jupyter_db_paths, start_year_str, team_logins
