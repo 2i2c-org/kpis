@@ -63,7 +63,7 @@ jobs:
         run: nox -s data
         env:
           # Needs read access to 2i2c-org/data-private releases
-          GH_TOKEN: ${{ secrets.TOKEN_GITHUB_API_READONLY }}
+          GH_TOKEN: ${{ secrets.GH_DATA_PRIVATE_TOKEN }}
 
       # Build the site
       - name: Build the Sphinx site
